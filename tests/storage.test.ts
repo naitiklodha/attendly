@@ -59,6 +59,11 @@ describe('saveDrives / loadDrives', () => {
     store.setItem('attcalc:v1:abc', '{not json');
     expect(loadDrives('abc', store)).toBeNull();
   });
+  it('filters out malformed drive entries', () => {
+    const store = memoryStore();
+    store.setItem('attcalc:v1:abc', JSON.stringify([drives[0], { bogus: 1 }]));
+    expect(loadDrives('abc', store)).toEqual(drives);
+  });
 });
 
 describe('exportJson / parseImport', () => {
@@ -77,13 +82,27 @@ describe('exportJson / parseImport', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('invalid-shape');
   });
+  it('rejects unsupported format versions', () => {
+    const result = parseImport(JSON.stringify({ version: 2, drives }), 'fp123');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('invalid-shape');
+      expect(result.error).toBe('This file uses an unsupported format version.');
+    }
+  });
+  it('accepts files without a fingerprint field', () => {
+    const result = parseImport(JSON.stringify({ drives }), 'fp123');
+    expect(result).toEqual({ ok: true, drives });
+  });
   it('flags a fingerprint mismatch', () => {
     const json = exportJson('other-fp', header, drives);
     const result = parseImport(json, 'fp123');
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe('fingerprint');
+    if (!result.ok && result.reason === 'fingerprint') {
       expect(result.fingerprint).toBe('other-fp');
+      expect(result.drives).toEqual(drives);
+    } else {
+      expect.fail('expected a fingerprint mismatch');
     }
   });
 });

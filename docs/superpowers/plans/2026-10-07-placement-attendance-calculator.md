@@ -1249,6 +1249,11 @@ describe('saveDrives / loadDrives', () => {
     store.setItem('attcalc:v1:abc', '{not json');
     expect(loadDrives('abc', store)).toBeNull();
   });
+  it('filters out malformed drive entries', () => {
+    const store = memoryStore();
+    store.setItem('attcalc:v1:abc', JSON.stringify([drives[0], { bogus: 1 }]));
+    expect(loadDrives('abc', store)).toEqual(drives);
+  });
 });
 
 describe('exportJson / parseImport', () => {
@@ -1267,13 +1272,27 @@ describe('exportJson / parseImport', () => {
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toBe('invalid-shape');
   });
+  it('rejects unsupported format versions', () => {
+    const result = parseImport(JSON.stringify({ version: 2, drives }), 'fp123');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe('invalid-shape');
+      expect(result.error).toBe('This file uses an unsupported format version.');
+    }
+  });
+  it('accepts files without a fingerprint field', () => {
+    const result = parseImport(JSON.stringify({ drives }), 'fp123');
+    expect(result).toEqual({ ok: true, drives });
+  });
   it('flags a fingerprint mismatch', () => {
     const json = exportJson('other-fp', header, drives);
     const result = parseImport(json, 'fp123');
     expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.reason).toBe('fingerprint');
+    if (!result.ok && result.reason === 'fingerprint') {
       expect(result.fingerprint).toBe('other-fp');
+      expect(result.drives).toEqual(drives);
+    } else {
+      expect.fail('expected a fingerprint mismatch');
     }
   });
 });
@@ -1386,7 +1405,8 @@ export function exportJson(fp: string, header: StudentHeader, drives: Drive[]): 
 
 export type ImportResult =
   | { ok: true; drives: Drive[] }
-  | { ok: false; reason: 'invalid-json' | 'invalid-shape' | 'fingerprint'; error: string; fingerprint?: string };
+  | { ok: false; reason: 'fingerprint'; error: string; fingerprint: string; drives: Drive[] }
+  | { ok: false; reason: 'invalid-json' | 'invalid-shape'; error: string };
 
 export function parseImport(json: string, currentFingerprint: string | null): ImportResult {
   let data: unknown;
@@ -1399,8 +1419,22 @@ export function parseImport(json: string, currentFingerprint: string | null): Im
     return { ok: false, reason: 'invalid-shape', error: 'Unexpected file structure.' };
   }
   const p = data as Record<string, unknown>;
-  if (!Array.isArray(p.drives) || !p.drives.every(isDrive)) {
+  if (!Array.isArray(p.drives)) {
     return { ok: false, reason: 'invalid-shape', error: 'No drive list found in that file.' };
+  }
+  if (!p.drives.every(isDrive)) {
+    return {
+      ok: false,
+      reason: 'invalid-shape',
+      error: 'One or more drives in that file are malformed.',
+    };
+  }
+  if (p.version !== undefined && p.version !== 1) {
+    return {
+      ok: false,
+      reason: 'invalid-shape',
+      error: 'This file uses an unsupported format version.',
+    };
   }
   const fp = typeof p.fingerprint === 'string' ? p.fingerprint : null;
   if (currentFingerprint && fp && fp !== currentFingerprint) {
@@ -1409,6 +1443,7 @@ export function parseImport(json: string, currentFingerprint: string | null): Im
       reason: 'fingerprint',
       error: 'This file was saved for a different attendance PDF.',
       fingerprint: fp,
+      drives: p.drives as Drive[],
     };
   }
   return { ok: true, drives: p.drives as Drive[] };
@@ -1421,7 +1456,7 @@ export function parseImport(json: string, currentFingerprint: string | null): Im
 npx vitest run tests/storage.test.ts
 ```
 
-Expected: PASS, 9 tests.
+Expected: PASS, 12 tests.
 
 - [ ] **Step 5: Commit**
 
