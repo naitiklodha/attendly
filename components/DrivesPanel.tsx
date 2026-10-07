@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useApp } from '@/lib/store';
+import { loadCompanies, refreshCompanies, rememberCompany } from '@/lib/companies';
+import CompanyCombobox from '@/components/CompanyCombobox';
 
 export default function DrivesPanel() {
   const { state, dispatch } = useApp();
@@ -10,6 +12,18 @@ export default function DrivesPanel() {
   const [company, setCompany] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [companies, setCompanies] = useState<string[]>(loadCompanies);
+
+  useEffect(() => {
+    let cancelled = false;
+    refreshCompanies().then((list) => {
+      if (!cancelled) setCompanies(list);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
 
   const active = editing ?? null;
   const canForm = Boolean(active) || state.selection.length > 0;
@@ -32,8 +46,8 @@ export default function DrivesPanel() {
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!company.trim() || !description.trim()) {
-      setError('Company and description are both required.');
+    if (!company.trim()) {
+      setError('Company is required.');
       return;
     }
     if (state.selection.length === 0) {
@@ -45,21 +59,25 @@ export default function DrivesPanel() {
     } else {
       dispatch({ type: 'ADD_DRIVE', company, description });
     }
+    rememberCompany(company);
+    setCompanies((prev) =>
+      prev.some((c) => c.toLowerCase() === company.trim().toLowerCase()) ? prev : [...prev, company.trim()],
+    );
     setCompany('');
     setDescription('');
     setError(null);
   };
 
   return (
-    <section className="space-y-4">
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-bold text-zinc-900">
-          {active ? `Edit drive — ${active.company}` : 'Tag as placement drive'}
+    <section className="panel overflow-hidden">
+      <div className="p-5">
+        <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">
+          {active ? `Edit drive — ${active.company}` : 'New drive'}
         </h2>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 text-[12px] text-ink-tertiary">
           {active || state.selection.length > 0
             ? `${state.selection.length} hour${state.selection.length === 1 ? '' : 's'} selected`
-            : 'Select absent hours on the left first.'}
+            : 'Tick hours in the list to open the form.'}
         </p>
 
         <AnimatePresence initial={false}>
@@ -71,34 +89,29 @@ export default function DrivesPanel() {
               onSubmit={submit}
               className="overflow-hidden"
             >
-              <div className="mt-3 space-y-2">
-                <input
+              <div className="mt-4 space-y-2.5">
+                <CompanyCombobox
                   value={company}
-                  onChange={(e) => setCompany(e.target.value)}
+                  onChange={setCompany}
+                  options={companies}
                   placeholder="Company (e.g. TCS)"
-                  className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Drive description (e.g. TCS National Qualifier — off-campus, Slot 2)"
+                  placeholder="Description (optional, e.g. TCS National Qualifier — Slot 2)"
                   rows={2}
-                  className="w-full resize-none rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="field resize-none"
                 />
-                {error && <p className="text-xs font-semibold text-rose-600">{error}</p>}
+                {error && (
+                  <p className="text-[13px] font-medium text-[#e06c75]">{error}</p>
+                )}
                 <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-500"
-                  >
+                  <button type="submit" className="btn-primary flex-1">
                     {active ? 'Update drive' : 'Save drive'}
                   </button>
                   {active && (
-                    <button
-                      type="button"
-                      onClick={cancel}
-                      className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
-                    >
+                    <button type="button" onClick={cancel} className="btn-secondary">
                       Cancel
                     </button>
                   )}
@@ -109,33 +122,37 @@ export default function DrivesPanel() {
         </AnimatePresence>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-bold text-zinc-900">Tagged drives</h2>
+      <div className="border-t border-hairline p-5">
+        <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">Saved drives</h2>
         {state.drives.length === 0 ? (
-          <p className="mt-2 text-xs text-zinc-400">No placement drives tagged yet.</p>
+          <p className="mt-3 text-[13px] text-ink-tertiary">No drives saved yet.</p>
         ) : (
-          <ul className="mt-3 space-y-3">
+          <ul className="mt-2 divide-y divide-hairline/70">
             {state.drives.map((drive) => (
-              <li key={drive.id} className="rounded-xl border border-zinc-200/70 bg-zinc-50/60 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-bold text-zinc-900">{drive.company}</p>
-                  <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+              <li key={drive.id} className="py-3 first:pt-2 last:pb-0">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[14px] font-medium text-ink">{drive.company}</p>
+                  <span className="shrink-0 font-mono text-[12px] tabular-nums text-ink-subtle">
                     {drive.rowIds.length} hr{drive.rowIds.length === 1 ? '' : 's'}
                   </span>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-zinc-600">{drive.description}</p>
-                <div className="mt-2 flex gap-3 text-[11px] font-bold">
+                {drive.description && (
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-ink-tertiary">
+                    {drive.description}
+                  </p>
+                )}
+                <div className="mt-2 flex gap-4 text-[13px] font-medium">
                   <button
                     type="button"
                     onClick={() => startEdit(drive.id)}
-                    className="text-indigo-600 hover:underline"
+                    className="text-primary transition hover:text-primary-hover"
                   >
                     Edit hours
                   </button>
                   <button
                     type="button"
                     onClick={() => dispatch({ type: 'DELETE_DRIVE', id: drive.id })}
-                    className="text-rose-600 hover:underline"
+                    className="text-ink-tertiary transition hover:text-[#e06c75]"
                   >
                     Remove
                   </button>

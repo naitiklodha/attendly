@@ -91,18 +91,34 @@ describe('appReducer', () => {
     expect([...state.selection].sort((a, b) => a - b)).toEqual([2, 3]);
   });
 
+  it('SELECT_DATE clears the date once every hour is already selected', () => {
+    let state = readyState();
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    expect(state.selection).toEqual([3]);
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    expect(state.selection).toEqual([]);
+  });
+
   it('SELECT_ALL selects every untagged A slot and skips NU', () => {
     const state = appReducer(readyState(), { type: 'SELECT_ALL' });
     expect(state.selection.sort((a, b) => a - b)).toEqual([2, 3]);
   });
 
-  it('ADD_DRIVE refuses empty selection or blank fields', () => {
+  it('ADD_DRIVE refuses empty selection or blank company', () => {
     const state = readyState();
     expect(appReducer(state, { type: 'ADD_DRIVE', company: '', description: 'd' })).toBe(state);
     const emptySelection = { ...state, selection: [] };
     expect(
       appReducer(emptySelection, { type: 'ADD_DRIVE', company: 'TCS', description: 'd' }),
     ).toBe(emptySelection);
+  });
+
+  it('ADD_DRIVE accepts an empty description', () => {
+    let state = readyState();
+    state = appReducer(state, { type: 'TOGGLE_SELECT', id: 2 });
+    state = appReducer(state, { type: 'ADD_DRIVE', company: 'TCS', description: '   ' });
+    expect(state.drives).toHaveLength(1);
+    expect(state.drives[0].description).toBe('');
   });
 
   it('ADD_DRIVE saves trimmed values, clears selection, sets notice', () => {

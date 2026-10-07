@@ -156,9 +156,11 @@ export default function ReportView() {
                 Drive {i + 1} — {block.drive.company}
                 <span className="ml-2 font-normal text-zinc-600">({block.hours.length} hour{block.hours.length === 1 ? '' : 's'})</span>
               </p>
-              <p className="mt-1 text-[10px] leading-relaxed text-zinc-800">
-                {block.drive.description}
-              </p>
+              {block.drive.description && (
+                <p className="mt-1 text-[10px] leading-relaxed text-zinc-800">
+                  {block.drive.description}
+                </p>
+              )}
               <table className="mt-2 w-full border-collapse text-[9.5px]">
                 <thead>
                   <tr className="bg-zinc-100">

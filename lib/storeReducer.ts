@@ -114,11 +114,16 @@ export function appReducer(state: AppState, action: Action): AppState {
       };
     }
 
-    case 'SELECT_DATE':
+    case 'SELECT_DATE': {
+      const ids = availableIds(state, action.date);
+      const allPicked = ids.length > 0 && ids.every((id) => state.selection.includes(id));
       return {
         ...state,
-        selection: [...new Set([...state.selection, ...availableIds(state, action.date)])],
+        selection: allPicked
+          ? state.selection.filter((id) => !ids.includes(id))
+          : [...new Set([...state.selection, ...ids])],
       };
+    }
 
     case 'SELECT_ALL':
       return { ...state, selection: [...new Set([...state.selection, ...availableIds(state)])] };
@@ -131,7 +136,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       const description = action.description.trim();
       const taggable = taggableIds(state.parsed);
       const rowIds = [...new Set(state.selection)].filter((id) => taggable.has(id));
-      if (rowIds.length === 0 || !company || !description) return state;
+      if (rowIds.length === 0 || !company) return state;
       const drive: Drive = { id: makeId(), company, description, rowIds };
       const released = state.drives
         .map((d) => ({ ...d, rowIds: d.rowIds.filter((id) => !rowIds.includes(id)) }))
@@ -149,7 +154,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       const target = state.drives.find((d) => d.id === action.id);
       const company = action.company.trim();
       const description = action.description.trim();
-      if (!target || !company || !description) return state;
+      if (!target || !company) return state;
       const taggable = taggableIds(state.parsed);
       const rowIds = [...new Set(state.selection)].filter((id) => taggable.has(id));
       if (rowIds.length === 0) return state;

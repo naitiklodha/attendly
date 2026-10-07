@@ -1,11 +1,18 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { parseAttendance } from '@/lib/parseAttendance';
 import { extractLines } from '@/lib/pdfText';
 import { fingerprint, loadDrives } from '@/lib/storage';
 import { useApp } from '@/lib/store';
+
+const STEPS = [
+  'Drop the hour-wise SAP export.',
+  'Tick the hours missed for a drive; name the company.',
+  'Check corrected %, then print the sheet-format report.',
+];
 
 export default function UploadScreen() {
   const { state, dispatch } = useApp();
@@ -37,79 +44,135 @@ export default function UploadScreen() {
     [dispatch],
   );
 
+  const parsing = state.status === 'parsing';
+
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-lg">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/25">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-              <path d="M4 19V5m0 14h16M8 15l3-4 3 3 4-6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <h1 className="text-xl font-bold text-zinc-900">Attendance Calculator</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Upload your hour-wise SAP attendance PDF and excuse placement-drive hours.
+    <div className="min-h-screen bg-canvas">
+      <header className="border-b border-hairline">
+        <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-5">
+          <Link href="/" className="wordmark">
+            Attendly
+          </Link>
+          <Link href="/" className="btn-ghost ml-auto">
+            ← Home
+          </Link>
+        </div>
+      </header>
+
+      <div className="mx-auto grid max-w-[1280px] items-start gap-12 px-5 py-16 lg:grid-cols-[1.1fr_0.9fr] lg:py-24">
+        <div>
+          <p className="t-eyebrow eyebrow-dot text-ink-subtle">The calculator</p>
+          <h1 className="t-display-lg mt-6 text-ink">
+            Credit the hours you missed for a placement drive.
+          </h1>
+          <p className="t-subhead mt-6 max-w-xl text-ink-muted">
+            Drop in your hour-wise SAP export, tick the absences that were really a drive, and print
+            the official course-wise report — with an annexure listing every credited hour.
           </p>
+
+          <motion.div
+            whileTap={{ scale: 0.995 }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) void handleFile(f);
+            }}
+            onClick={() => !parsing && inputRef.current?.click()}
+            className={`mt-9 cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 text-center transition ${
+              dragging
+                ? 'border-primary bg-primary/10'
+                : parsing
+                  ? 'border-hairline-strong bg-surface-1'
+                  : 'border-hairline bg-surface-1 hover:border-hairline-strong hover:bg-surface-2'
+            }`}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFile(f);
+                e.target.value = '';
+              }}
+            />
+            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-md border border-hairline bg-surface-2 text-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                <path d="M12 3v10m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+              </svg>
+            </span>
+            <p className="mt-4 text-[15px] font-medium text-ink">
+              {parsing ? 'Reading PDF…' : 'Drop your hour-wise SAP export'}
+            </p>
+            <p className="mt-1 text-[13px] text-ink-tertiary">
+              {parsing ? 'This takes a moment.' : 'or click to browse'}
+            </p>
+          </motion.div>
+
+          <p className="mt-4 text-[13px] leading-relaxed text-ink-tertiary">
+            Parsed in your browser — the file is never uploaded. Your tags are saved locally, keyed
+            to the PDF&rsquo;s SHA-256.
+          </p>
+
+          {state.status === 'error' && state.errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-5 rounded-md border border-hairline-strong bg-surface-2 px-4 py-3 text-[14px] text-ink"
+            >
+              {state.errorMessage}
+            </motion.div>
+          )}
         </div>
 
-        <motion.div
-          whileTap={{ scale: 0.995 }}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
-          }}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            const f = e.dataTransfer.files?.[0];
-            if (f) void handleFile(f);
-          }}
-          onClick={() => inputRef.current?.click()}
-          className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition ${
-            dragging
-              ? 'border-indigo-500 bg-indigo-50/60'
-              : 'border-zinc-300 bg-white hover:border-indigo-400 hover:bg-indigo-50/30'
-          }`}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf,.pdf"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handleFile(f);
-              e.target.value = '';
-            }}
-          />
-          {state.status === 'parsing' ? (
-            <p className="text-sm font-medium text-indigo-600">Reading PDF…</p>
-          ) : (
-            <>
-              <p className="text-sm font-semibold text-zinc-800">Drop your attendance PDF here</p>
-              <p className="mt-1 text-xs text-zinc-500">
-                or click to browse — the file never leaves your device
-              </p>
-            </>
-          )}
-        </motion.div>
+        <div className="space-y-5">
+          <div className="panel p-6">
+            <p className="t-eyebrow text-ink-tertiary">How it works</p>
+            <ol className="mt-4 space-y-3">
+              {STEPS.map((step, i) => (
+                <li key={step} className="flex gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 font-mono text-[11px] text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="text-[14px] leading-relaxed text-ink-muted">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
 
-        {state.status === 'error' && state.errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
-          >
-            {state.errorMessage}
-          </motion.div>
-        )}
+          <div className="panel p-6">
+            <p className="t-eyebrow text-ink-tertiary">Sample output</p>
+            <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="font-mono text-[15px] text-ink-tertiary line-through">64.71%</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-ink-tertiary">
+                <path d="M5 12h14m-6-6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="font-mono text-[30px] font-medium tracking-[-1.5px] text-success">
+                100.00%
+              </span>
+            </div>
+            <p className="mt-2 text-[13px] text-ink-subtle">
+              Big Data Analytics · 12 hours credited
+            </p>
+          </div>
 
-        <p className="mt-5 text-center text-xs text-zinc-400">
-          Nothing is uploaded — parsing happens entirely in your browser.
-        </p>
+          <div className="panel p-6">
+            <p className="text-[13px] leading-relaxed text-ink-subtle">
+              <span className="font-medium text-ink">Estimate only.</span> Granting attendance is at
+              the sole discretion of the college, against the forms submitted to the Placement
+              Office.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

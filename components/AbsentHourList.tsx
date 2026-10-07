@@ -16,33 +16,33 @@ export default function AbsentHourList() {
   const editing = state.editingDriveId;
 
   return (
-    <section className="rounded-2xl border border-zinc-200/80 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center gap-3 border-b border-zinc-100 px-4 py-3">
+    <section className="panel overflow-hidden">
+      <div className="flex flex-wrap items-center gap-3 border-b border-hairline px-5 py-3.5">
         <div className="mr-auto">
-          <h2 className="text-sm font-bold text-zinc-900">Absent hours</h2>
-          <p className="text-xs text-zinc-500">
+          <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">Absent hours</h2>
+          <p className="mt-0.5 text-[12px] text-ink-tertiary">
             {editing
               ? 'Editing — tick the hours this drive should cover.'
-              : 'Tick hours to excuse them as a placement drive.'}
+              : 'Tick the hours you missed — they’ll be credited as attended.'}
           </p>
         </div>
         {editing ? (
           <button
             type="button"
             onClick={() => dispatch({ type: 'CANCEL_EDIT' })}
-            className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+            className="btn-secondary"
           >
             Cancel edit
           </button>
         ) : (
           <>
-            <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+            <span className="font-mono text-[12px] text-ink-subtle">
               {state.selection.length} selected
             </span>
             <button
               type="button"
               onClick={() => dispatch({ type: 'SELECT_ALL' })}
-              className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+              className="btn-secondary"
             >
               Select all
             </button>
@@ -51,28 +51,42 @@ export default function AbsentHourList() {
       </div>
 
       {groups.length === 0 ? (
-        <p className="px-4 py-8 text-center text-sm text-zinc-400">
+        <p className="px-5 py-10 text-center text-[14px] text-ink-tertiary">
           No absences — every counted hour is present.
         </p>
       ) : (
-        <ul className="max-h-[560px] divide-y divide-zinc-100 overflow-y-auto">
-          {groups.map((group) => (
+        <ul className="max-h-[560px] overflow-y-auto">
+          {groups.map((group) => {
+            const selectable = group.slots.filter((slot) => {
+              const owner = ownerOf(slot.id, state.drives);
+              return !owner || owner.id === editing;
+            });
+            const daySelectable = selectable.length;
+            const daySelected = selectable.filter((slot) =>
+              state.selection.includes(slot.id),
+            ).length;
+
+            return (
             <li key={group.date}>
-              <div className="sticky top-0 z-10 flex items-center gap-3 bg-zinc-50/95 px-4 py-1.5 backdrop-blur">
-                <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">
-                  {formatDayLabel(group.date)}
-                </span>
+              <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-hairline bg-surface-2/95 px-5 py-1.5 backdrop-blur">
                 {!editing && (
-                  <button
-                    type="button"
-                    onClick={() => dispatch({ type: 'SELECT_DATE', date: group.date })}
-                    className="text-[11px] font-semibold text-indigo-600 hover:underline"
-                  >
-                    Select all
-                  </button>
+                  <input
+                    type="checkbox"
+                    aria-label={`Select every hour on ${formatDayLabel(group.date)}`}
+                    checked={daySelectable > 0 && daySelected === daySelectable}
+                    disabled={daySelectable === 0}
+                    onChange={() => dispatch({ type: 'SELECT_DATE', date: group.date })}
+                    className="h-4 w-4 shrink-0 cursor-pointer rounded-xs border-hairline-strong bg-surface-1 accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  />
+                )}
+                <span className="t-eyebrow text-ink-subtle">{formatDayLabel(group.date)}</span>
+                {!editing && (
+                  <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-tertiary">
+                    {daySelected}/{daySelectable}
+                  </span>
                 )}
               </div>
-              <ul className="space-y-2 px-3 py-2">
+              <ul className="divide-y divide-hairline/70">
                 {group.slots.map((slot: HourSlot) => {
                   const owner = ownerOf(slot.id, state.drives);
                   const checked = state.selection.includes(slot.id);
@@ -80,32 +94,32 @@ export default function AbsentHourList() {
                   return (
                     <li
                       key={slot.id}
-                      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition ${
-                        checked
-                          ? 'border-indigo-300 bg-indigo-50/50'
-                          : 'border-zinc-200/70 bg-white hover:border-zinc-300'
-                      } ${disabled ? 'opacity-60' : ''}`}
+                      className={`flex items-center gap-3 px-5 py-2.5 transition ${
+                        checked ? 'bg-primary/10' : 'hover:bg-surface-2/60'
+                      } ${disabled ? 'opacity-50' : ''}`}
                     >
                       <input
                         type="checkbox"
                         checked={checked}
                         disabled={disabled}
                         onChange={() => dispatch({ type: 'TOGGLE_SELECT', id: slot.id })}
-                        className="h-4 w-4 shrink-0 rounded border-zinc-300 accent-indigo-600"
+                        className="h-4 w-4 shrink-0 cursor-pointer rounded-xs border-hairline-strong bg-surface-1 accent-primary"
                       />
-                      <span className="w-36 shrink-0 text-xs font-medium tabular-nums text-zinc-500">
+                      <span className="w-36 shrink-0 font-mono text-[12px] tabular-nums text-ink-tertiary">
                         {formatTimeRange(slot.start, slot.end)}
                       </span>
-                      <span className="flex-1 truncate text-sm text-zinc-800">{slot.courseName}</span>
-                      <span className="hidden shrink-0 text-[10px] font-bold uppercase tracking-wide text-zinc-400 sm:block">
+                      <span className="flex-1 truncate text-[14px] text-ink-muted">
+                        {slot.courseName}
+                      </span>
+                      <span className="hidden shrink-0 font-mono text-[11px] uppercase text-ink-tertiary sm:block">
                         {slot.lectureType}
                       </span>
                       {owner ? (
-                        <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+                        <span className="shrink-0 rounded-full border border-hairline bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-ink-subtle">
                           Excused · {owner.company}
                         </span>
                       ) : (
-                        <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600">
+                        <span className="shrink-0 rounded-full border border-hairline-strong bg-surface-3 px-2.5 py-0.5 font-mono text-[11px] text-[#e06c75]">
                           Absent
                         </span>
                       )}
@@ -114,7 +128,8 @@ export default function AbsentHourList() {
                 })}
               </ul>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </section>
