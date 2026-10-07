@@ -967,6 +967,8 @@ Expected: FAIL — cannot resolve `../lib/calculate`.
 
 - [ ] **Step 3: Implement `lib/calculate.ts`**
 
+> Invariant (do not "clean up"): `CourseLine.courseName`/`courseRaw`/`division` are stored **UPPERCASED** (sheet.PDF fidelity) while `CourseSummary.courseName` keeps original case as the grouping key. Copy the `.toUpperCase()` calls verbatim.
+
 ```ts
 import type {
   CourseLine,
@@ -2829,13 +2831,21 @@ Add helper above the component:
 ```tsx
 function buildAnnexure(drives: Drive[], slots: HourSlot[]) {
   const byId = new Map(slots.map((s) => [s.id, s]));
+  const toMinutes = (t: string): number => {
+    const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(t);
+    if (!m) return 0;
+    const h = Number(m[1]) % 12;
+    return (m[3] === 'PM' ? h + 12 : h) * 60 + Number(m[2]);
+  };
   return drives
     .map((drive) => ({
       drive,
       hours: drive.rowIds
         .map((id) => byId.get(id))
         .filter((s): s is HourSlot => Boolean(s))
-        .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start)),
+        .sort(
+          (a, b) => a.date.localeCompare(b.date) || toMinutes(a.start) - toMinutes(b.start),
+        ),
     }))
     .filter((block) => block.hours.length > 0);
 }
