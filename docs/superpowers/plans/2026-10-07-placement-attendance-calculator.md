@@ -2280,9 +2280,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (state.status === 'ready' && state.fingerprint) {
-      saveDrives(state.fingerprint, state.drives);
+      const saved = saveDrives(state.fingerprint, state.drives);
+      if (!saved) {
+        dispatch({
+          type: 'SET_NOTICE',
+          message: 'Storage unavailable — tags will not persist. Use Export JSON to save them.',
+        });
+      }
     }
-  }, [state.status, state.fingerprint, state.drives]);
+  }, [state.status, state.fingerprint, state.drives, dispatch]);
 
   useEffect(() => {
     if (!state.notice) return;
