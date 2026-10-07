@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import AbsentHourList from './AbsentHourList';
 import NoticeToast from './NoticeToast';
 import SubjectCards from './SubjectCards';
 import TopBar from './TopBar';
@@ -33,6 +34,10 @@ export default function Dashboard() {
       <TopBar />
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">
         <SubjectCards />
+        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <AbsentHourList />
+          <div className="space-y-6" />
+        </div>
       </main>
       <NoticeToast />
     </div>
