@@ -2044,9 +2044,12 @@ export default function UploadScreen() {
   const { state, dispatch } = useApp();
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const parsingRef = useRef(false);
 
   const handleFile = useCallback(
     async (file: File) => {
+      if (parsingRef.current) return;
+      parsingRef.current = true;
       dispatch({ type: 'PARSE_START' });
       try {
         const bytes = new Uint8Array(await file.arrayBuffer());
@@ -2060,6 +2063,8 @@ export default function UploadScreen() {
           type: 'PARSE_ERROR',
           message: err instanceof Error ? err.message : 'Could not read this PDF.',
         });
+      } finally {
+        parsingRef.current = false;
       }
     },
     [dispatch],
@@ -2086,7 +2091,9 @@ export default function UploadScreen() {
             e.preventDefault();
             setDragging(true);
           }}
-          onDragLeave={() => setDragging(false)}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false);
+          }}
           onDrop={(e) => {
             e.preventDefault();
             setDragging(false);
@@ -2170,7 +2177,7 @@ export default function TopBar() {
     a.href = url;
     a.download = `attendance-drives-${header.studentNumber}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const onImport = async (file: File) => {

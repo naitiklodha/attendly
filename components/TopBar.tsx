@@ -23,7 +23,7 @@ export default function TopBar() {
     a.href = url;
     a.download = `attendance-drives-${header.studentNumber}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const onImport = async (file: File) => {
