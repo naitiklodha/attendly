@@ -27,6 +27,14 @@ describe('splitCourse', () => {
   it('returns null when no type suffix', () => {
     expect(splitCourse('Random Course')).toBeNull();
   });
+  it('returns empty division without BTI marker', () => {
+    expect(splitCourse('RandomP1')).toEqual({
+      courseName: 'Random',
+      typeCode: 'P1',
+      lectureType: 'PRAC',
+      division: '',
+    });
+  });
 });
 
 describe('parseAttendance (fixture)', () => {
@@ -78,8 +86,29 @@ describe('parseAttendance (fixture)', () => {
     expect(parsed.dateRange).toEqual({ from: '2026-07-13', to: '2026-09-16' });
   });
 
+  it('normalizes single-digit hour times', () => {
+    const slot = parsed.slots.find((s) => s.id === 9);
+    expect(slot).toBeDefined();
+    expect(slot!.start).toBe('8:00 AM');
+    expect(slot!.end).toBe('9:00 AM');
+  });
+
   it('throws on non-attendance content', () => {
     expect(() => parseAttendance(['hello world'])).toThrow(ParseError);
+    expect(() => parseAttendance(['hello world'])).toThrow(/missing header fields/);
+  });
+
+  it('throws when rows have an unrecognised course format', () => {
+    expect(() =>
+      parseAttendance([
+        'Student Name Someone',
+        'Student Number 123',
+        'Roll No. X1',
+        'Academic Year & Academic Session 2026-2027, Semester I',
+        'Program Name B.Tech',
+        '9 Random Course CT Comp B1 Jul 13, 2026 10:00:01 AM 11:00:00 AM P',
+      ]),
+    ).toThrow(/unrecognised course format/);
   });
 
   it('throws when headers exist but no rows', () => {

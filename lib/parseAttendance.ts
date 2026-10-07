@@ -89,12 +89,16 @@ export function parseHeader(lines: string[]): StudentHeader {
 export function parseAttendance(lines: string[]): ParsedAttendance {
   const header = parseHeader(lines);
   const slots: HourSlot[] = [];
+  let skipped = 0;
   for (const line of lines) {
     const m = ROW_RE.exec(line);
     if (!m) continue;
     const courseRaw = m[2].trim();
     const course = splitCourse(courseRaw);
-    if (!course) continue;
+    if (!course) {
+      skipped++;
+      continue;
+    }
     slots.push({
       id: Number(m[1]),
       courseRaw,
@@ -104,6 +108,11 @@ export function parseAttendance(lines: string[]): ParsedAttendance {
       end: normalizeTime(m[5]),
       status: m[6] as AttendanceStatus,
     });
+  }
+  if (skipped > 0) {
+    throw new ParseError(
+      `${skipped} rows had an unrecognised course format — expected "<course>P1|T1 BTI <division>".`,
+    );
   }
   if (slots.length === 0) {
     throw new ParseError(
