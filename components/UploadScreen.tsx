@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { parseAttendance } from '@/lib/parseAttendance';
 import { extractLines } from '@/lib/pdfText';
+import { readFileBytes } from '@/lib/file';
 import { fingerprint, loadDrives } from '@/lib/storage';
 import { useApp } from '@/lib/store';
 import { SAP_PORTAL_LABEL, SAP_PORTAL_URL } from '@/lib/links';
@@ -38,7 +39,7 @@ export default function UploadScreen() {
       parsingRef.current = true;
       dispatch({ type: 'PARSE_START' });
       try {
-        const bytes = new Uint8Array(await file.arrayBuffer());
+        const bytes = await readFileBytes(file);
         const fp = await fingerprint(bytes);
         const lines = await extractLines(bytes);
         const parsed = parseAttendance(lines);
