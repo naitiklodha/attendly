@@ -90,6 +90,20 @@ export default function UploadScreen() {
             the official course-wise report — with an annexure listing every credited hour.
           </p>
 
+          <div className="panel mt-7 p-6">
+            <p className="t-eyebrow text-ink-tertiary">How it works</p>
+            <ol className="mt-4 space-y-3">
+              {STEPS.map((step, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 font-mono text-[11px] text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="text-[14px] leading-relaxed text-ink-muted">{step}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
           <motion.div
             whileTap={{ scale: 0.995 }}
             onDragOver={(e) => {
@@ -154,20 +168,6 @@ export default function UploadScreen() {
         </div>
 
         <div className="space-y-5">
-          <div className="panel p-6">
-            <p className="t-eyebrow text-ink-tertiary">How it works</p>
-            <ol className="mt-4 space-y-3">
-              {STEPS.map((step, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 font-mono text-[11px] text-primary">
-                    {i + 1}
-                  </span>
-                  <span className="text-[14px] leading-relaxed text-ink-muted">{step}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
           <div className="panel p-6">
             <p className="t-eyebrow text-ink-tertiary">Sample output</p>
             <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
