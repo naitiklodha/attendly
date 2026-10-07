@@ -4,6 +4,7 @@ import { formatDayLabel, formatPercent, formatReportDate, formatTimeRange } from
 describe('formatReportDate', () => {
   it('renders DD.MM.YYYY', () => {
     expect(formatReportDate('2026-07-13')).toBe('13.07.2026');
+    expect(formatReportDate('2026-07-05')).toBe('05.07.2026');
   });
 });
 
