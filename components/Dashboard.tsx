@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import NoticeToast from './NoticeToast';
+import SubjectCards from './SubjectCards';
 import TopBar from './TopBar';
 import { saveDrives } from '@/lib/storage';
 import { useApp } from '@/lib/store';
@@ -30,7 +31,9 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen">
       <TopBar />
-      <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">{/* sections wired below */}</main>
+      <main className="mx-auto max-w-6xl px-4 pb-24 pt-6">
+        <SubjectCards />
+      </main>
       <NoticeToast />
     </div>
   );
