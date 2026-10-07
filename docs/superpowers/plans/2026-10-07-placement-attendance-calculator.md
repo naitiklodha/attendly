@@ -370,6 +370,10 @@ import { extractLines } from '../lib/pdfText';
 
 const PDF = path.join(process.cwd(), 'ZSVKM_STUDENT_ATTENDANCE_COPY.pdf');
 
+it('sample PDF is committed', () => {
+  expect(existsSync(PDF)).toBe(true);
+});
+
 describe.runIf(existsSync(PDF))('extractLines (live sample PDF)', () => {
   it('reconstructs visual rows in column order', async () => {
     const lines = await extractLines(new Uint8Array(readFileSync(PDF)));
@@ -381,6 +385,11 @@ describe.runIf(existsSync(PDF))('extractLines (live sample PDF)', () => {
       lines.some((l) => l.startsWith('Student Name') && l.includes('NAITIK LODHA')),
     ).toBe(true);
     expect(lines.some((l) => /^166 /.test(l) && l.endsWith('NU'))).toBe(true);
+    const ids = lines
+      .filter((l) => /^\d+ .* (P|A|E|L|NU)$/.test(l))
+      .map((l) => Number.parseInt(l, 10))
+      .sort((a, b) => a - b);
+    expect(ids).toEqual(Array.from({ length: 166 }, (_, i) => i + 1));
   });
 });
 ```
@@ -430,10 +439,10 @@ interface Point {
 }
 
 export async function extractLines(pdfBytes: Uint8Array): Promise<string[]> {
-  const task = getDocument({ data: pdfBytes });
-  const doc = await task.promise;
+  const task = getDocument({ data: pdfBytes.slice() });
   const lines: string[] = [];
   try {
+    const doc = await task.promise;
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
@@ -480,7 +489,7 @@ export async function extractLines(pdfBytes: Uint8Array): Promise<string[]> {
 }
 ```
 
-Note: the `'str' in item && 'transform' in item` guard is required for type-safety (pdfjs returns `TextItem | TextMarkedContent`), and `isEvalSupported` was dropped — it is not in pdfjs v6's `DocumentInitParameters` type.
+Note: the `'str' in item && 'transform' in item` guard is required for type-safety (pdfjs returns `TextItem | TextMarkedContent`), and `isEvalSupported` was dropped — it is not in pdfjs v6's `DocumentInitParameters` type. Two review-driven fixes vs the original draft: `task.promise` is awaited *inside* the `try` so a corrupt PDF still reaches `task.destroy()` in `finally` (no worker leak), and `pdfBytes.slice()` copies the buffer because pdfjs transfers (detaches) the caller's `data.buffer`.
 
 - [ ] **Step 4: Run and confirm pass**
 

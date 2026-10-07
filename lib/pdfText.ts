@@ -32,10 +32,10 @@ interface Point {
 }
 
 export async function extractLines(pdfBytes: Uint8Array): Promise<string[]> {
-  const task = getDocument({ data: pdfBytes });
-  const doc = await task.promise;
+  const task = getDocument({ data: pdfBytes.slice() });
   const lines: string[] = [];
   try {
+    const doc = await task.promise;
     for (let p = 1; p <= doc.numPages; p++) {
       const page = await doc.getPage(p);
       const content = await page.getTextContent();
