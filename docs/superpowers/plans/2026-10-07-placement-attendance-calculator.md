@@ -2468,7 +2468,7 @@ import { formatDayLabel, formatTimeRange } from '@/lib/format';
 import { useApp } from '@/lib/store';
 import type { HourSlot } from '@/lib/types';
 
-function ownerOf(slotId: number, drives: { id: string; rowIds: number[] }[]) {
+function ownerOf<T extends { id: string; rowIds: number[] }>(slotId: number, drives: T[]) {
   return drives.find((d) => d.rowIds.includes(slotId)) ?? null;
 }
 
