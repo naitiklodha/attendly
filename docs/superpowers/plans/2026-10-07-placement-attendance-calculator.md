@@ -1530,6 +1530,17 @@ describe('appReducer', () => {
     expect(state.notice).toContain('Restored 1');
   });
 
+  it('PARSE_SUCCESS drops non-taggable restored hours', () => {
+    const state = appReducer(initialState, {
+      type: 'PARSE_SUCCESS',
+      parsed: readyState().parsed!,
+      fingerprint: 'fp',
+      restored: [{ id: 'r1', company: 'Infosys', description: 'd', rowIds: [4, 2] }],
+    });
+    expect(state.drives).toHaveLength(1);
+    expect(state.drives[0].rowIds).toEqual([2]);
+  });
+
   it('PARSE_ERROR keeps the user on upload with a message', () => {
     const state = appReducer(initialState, { type: 'PARSE_ERROR', message: 'bad pdf' });
     expect(state.status).toBe('error');
@@ -1547,6 +1558,13 @@ describe('appReducer', () => {
   it('SELECT_DATE selects all A slots of that date only', () => {
     const state = appReducer(readyState(), { type: 'SELECT_DATE', date: '2026-07-14' });
     expect(state.selection).toEqual([3]);
+  });
+
+  it('SELECT_DATE adds to the existing selection', () => {
+    let state = readyState();
+    state = appReducer(state, { type: 'TOGGLE_SELECT', id: 2 });
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    expect([...state.selection].sort((a, b) => a - b)).toEqual([2, 3]);
   });
 
   it('SELECT_ALL selects every untagged A slot and skips NU', () => {
@@ -1614,6 +1632,16 @@ describe('appReducer', () => {
     expect(state.editingDriveId).toBeNull();
   });
 
+  it('UPDATE_DRIVE refuses an empty selection', () => {
+    let state = readyState();
+    state = { ...state, drives: [{ id: 'd1', company: 'TCS', description: 'd', rowIds: [2] }] };
+    state = appReducer(state, { type: 'START_EDIT', id: 'd1' });
+    state = appReducer(state, { type: 'CLEAR_SELECTION' });
+    const before = state;
+    state = appReducer(state, { type: 'UPDATE_DRIVE', id: 'd1', company: 'TCS', description: 'x' });
+    expect(state).toBe(before);
+  });
+
   it('DELETE_DRIVE removes the drive and re-opens its hours', () => {
     let state = readyState();
     state = { ...state, drives: [{ id: 'd1', company: 'TCS', description: 'd', rowIds: [2] }] };
@@ -1632,6 +1660,19 @@ describe('appReducer', () => {
     });
     expect(state.drives).toHaveLength(1);
     expect(state.drives[0].rowIds).toEqual([2]);
+  });
+
+  it('SET_DRIVES drops duplicate hours within and across drives', () => {
+    const state = appReducer(readyState(), {
+      type: 'SET_DRIVES',
+      drives: [
+        { id: 'a', company: 'One', description: 'd', rowIds: [2, 2] },
+        { id: 'b', company: 'Two', description: 'd', rowIds: [2, 3] },
+      ],
+    });
+    expect(state.drives).toHaveLength(2);
+    expect(state.drives[0].rowIds).toEqual([2]);
+    expect(state.drives[1].rowIds).toEqual([3]);
   });
 
   it('RESET returns to initial state', () => {
@@ -1698,6 +1739,21 @@ function taggableIds(parsed: ParsedAttendance | null): Set<number> {
   return new Set((parsed?.slots ?? []).filter((s) => s.status === 'A').map((s) => s.id));
 }
 
+function sanitizeDrives(drives: Drive[], parsed: ParsedAttendance | null): Drive[] {
+  const valid = taggableIds(parsed);
+  const seen = new Set<number>();
+  const out: Drive[] = [];
+  for (const d of drives) {
+    const rowIds = d.rowIds.filter((id) => {
+      if (!valid.has(id) || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    if (rowIds.length > 0) out.push({ ...d, rowIds });
+  }
+  return out;
+}
+
 function availableIds(state: AppState, date?: string): number[] {
   const own = state.editingDriveId;
   return (state.parsed?.slots ?? [])
@@ -1725,7 +1781,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         status: 'ready',
         parsed: action.parsed,
         fingerprint: action.fingerprint,
-        drives: action.restored,
+        drives: sanitizeDrives(action.restored, action.parsed),
         selection: [],
         editingDriveId: null,
         errorMessage: null,
@@ -1767,7 +1823,8 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'ADD_DRIVE': {
       const company = action.company.trim();
       const description = action.description.trim();
-      const rowIds = [...new Set(state.selection)].filter((id) => taggableIds(state.parsed).has(id));
+      const taggable = taggableIds(state.parsed);
+      const rowIds = [...new Set(state.selection)].filter((id) => taggable.has(id));
       if (rowIds.length === 0 || !company || !description) return state;
       const drive: Drive = { id: makeId(), company, description, rowIds };
       const released = state.drives
@@ -1787,7 +1844,8 @@ export function appReducer(state: AppState, action: Action): AppState {
       const company = action.company.trim();
       const description = action.description.trim();
       if (!target || !company || !description) return state;
-      const rowIds = [...new Set(state.selection)].filter((id) => taggableIds(state.parsed).has(id));
+      const taggable = taggableIds(state.parsed);
+      const rowIds = [...new Set(state.selection)].filter((id) => taggable.has(id));
       if (rowIds.length === 0) return state;
       const drives: Drive[] = [];
       for (const d of state.drives) {
@@ -1829,10 +1887,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, editingDriveId: null, selection: [] };
 
     case 'SET_DRIVES': {
-      const valid = taggableIds(state.parsed);
-      const drives = action.drives
-        .map((d) => ({ ...d, rowIds: d.rowIds.filter((id) => valid.has(id)) }))
-        .filter((d) => d.rowIds.length > 0);
+      const drives = sanitizeDrives(action.drives, state.parsed);
       return {
         ...state,
         drives,
@@ -1860,7 +1915,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 npx vitest run tests/storeReducer.test.ts
 ```
 
-Expected: PASS, 13 tests.
+Expected: PASS, 17 tests.
 
 - [ ] **Step 5: Implement `lib/store.tsx` (provider + hook)**
 

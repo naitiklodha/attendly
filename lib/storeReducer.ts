@@ -44,6 +44,21 @@ function taggableIds(parsed: ParsedAttendance | null): Set<number> {
   return new Set((parsed?.slots ?? []).filter((s) => s.status === 'A').map((s) => s.id));
 }
 
+function sanitizeDrives(drives: Drive[], parsed: ParsedAttendance | null): Drive[] {
+  const valid = taggableIds(parsed);
+  const seen = new Set<number>();
+  const out: Drive[] = [];
+  for (const d of drives) {
+    const rowIds = d.rowIds.filter((id) => {
+      if (!valid.has(id) || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    if (rowIds.length > 0) out.push({ ...d, rowIds });
+  }
+  return out;
+}
+
 function availableIds(state: AppState, date?: string): number[] {
   const own = state.editingDriveId;
   return (state.parsed?.slots ?? [])
@@ -71,7 +86,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         status: 'ready',
         parsed: action.parsed,
         fingerprint: action.fingerprint,
-        drives: action.restored,
+        drives: sanitizeDrives(action.restored, action.parsed),
         selection: [],
         editingDriveId: null,
         errorMessage: null,
@@ -113,7 +128,8 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'ADD_DRIVE': {
       const company = action.company.trim();
       const description = action.description.trim();
-      const rowIds = [...new Set(state.selection)].filter((id) => taggableIds(state.parsed).has(id));
+      const taggable = taggableIds(state.parsed);
+      const rowIds = [...new Set(state.selection)].filter((id) => taggable.has(id));
       if (rowIds.length === 0 || !company || !description) return state;
       const drive: Drive = { id: makeId(), company, description, rowIds };
       const released = state.drives
@@ -133,7 +149,8 @@ export function appReducer(state: AppState, action: Action): AppState {
       const company = action.company.trim();
       const description = action.description.trim();
       if (!target || !company || !description) return state;
-      const rowIds = [...new Set(state.selection)].filter((id) => taggableIds(state.parsed).has(id));
+      const taggable = taggableIds(state.parsed);
+      const rowIds = [...new Set(state.selection)].filter((id) => taggable.has(id));
       if (rowIds.length === 0) return state;
       const drives: Drive[] = [];
       for (const d of state.drives) {
@@ -175,10 +192,7 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, editingDriveId: null, selection: [] };
 
     case 'SET_DRIVES': {
-      const valid = taggableIds(state.parsed);
-      const drives = action.drives
-        .map((d) => ({ ...d, rowIds: d.rowIds.filter((id) => valid.has(id)) }))
-        .filter((d) => d.rowIds.length > 0);
+      const drives = sanitizeDrives(action.drives, state.parsed);
       return {
         ...state,
         drives,

@@ -54,6 +54,17 @@ describe('appReducer', () => {
     expect(state.notice).toContain('Restored 1');
   });
 
+  it('PARSE_SUCCESS drops non-taggable restored hours', () => {
+    const state = appReducer(initialState, {
+      type: 'PARSE_SUCCESS',
+      parsed: readyState().parsed!,
+      fingerprint: 'fp',
+      restored: [{ id: 'r1', company: 'Infosys', description: 'd', rowIds: [4, 2] }],
+    });
+    expect(state.drives).toHaveLength(1);
+    expect(state.drives[0].rowIds).toEqual([2]);
+  });
+
   it('PARSE_ERROR keeps the user on upload with a message', () => {
     const state = appReducer(initialState, { type: 'PARSE_ERROR', message: 'bad pdf' });
     expect(state.status).toBe('error');
@@ -71,6 +82,13 @@ describe('appReducer', () => {
   it('SELECT_DATE selects all A slots of that date only', () => {
     const state = appReducer(readyState(), { type: 'SELECT_DATE', date: '2026-07-14' });
     expect(state.selection).toEqual([3]);
+  });
+
+  it('SELECT_DATE adds to the existing selection', () => {
+    let state = readyState();
+    state = appReducer(state, { type: 'TOGGLE_SELECT', id: 2 });
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    expect([...state.selection].sort((a, b) => a - b)).toEqual([2, 3]);
   });
 
   it('SELECT_ALL selects every untagged A slot and skips NU', () => {
@@ -138,6 +156,16 @@ describe('appReducer', () => {
     expect(state.editingDriveId).toBeNull();
   });
 
+  it('UPDATE_DRIVE refuses an empty selection', () => {
+    let state = readyState();
+    state = { ...state, drives: [{ id: 'd1', company: 'TCS', description: 'd', rowIds: [2] }] };
+    state = appReducer(state, { type: 'START_EDIT', id: 'd1' });
+    state = appReducer(state, { type: 'CLEAR_SELECTION' });
+    const before = state;
+    state = appReducer(state, { type: 'UPDATE_DRIVE', id: 'd1', company: 'TCS', description: 'x' });
+    expect(state).toBe(before);
+  });
+
   it('DELETE_DRIVE removes the drive and re-opens its hours', () => {
     let state = readyState();
     state = { ...state, drives: [{ id: 'd1', company: 'TCS', description: 'd', rowIds: [2] }] };
@@ -156,6 +184,19 @@ describe('appReducer', () => {
     });
     expect(state.drives).toHaveLength(1);
     expect(state.drives[0].rowIds).toEqual([2]);
+  });
+
+  it('SET_DRIVES drops duplicate hours within and across drives', () => {
+    const state = appReducer(readyState(), {
+      type: 'SET_DRIVES',
+      drives: [
+        { id: 'a', company: 'One', description: 'd', rowIds: [2, 2] },
+        { id: 'b', company: 'Two', description: 'd', rowIds: [2, 3] },
+      ],
+    });
+    expect(state.drives).toHaveLength(2);
+    expect(state.drives[0].rowIds).toEqual([2]);
+    expect(state.drives[1].rowIds).toEqual([3]);
   });
 
   it('RESET returns to initial state', () => {
