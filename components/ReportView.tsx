@@ -1,9 +1,9 @@
 'use client';
 
 import { creditedIds, summarize } from '@/lib/calculate';
-import { formatReportDate } from '@/lib/format';
+import { formatDayLabel, formatReportDate, formatTimeRange } from '@/lib/format';
 import { useApp } from '@/lib/store';
-import type { CourseLine } from '@/lib/types';
+import type { CourseLine, Drive, HourSlot } from '@/lib/types';
 
 interface Row {
   sNo: number;
@@ -18,6 +18,27 @@ const FOOTNOTES = [
   'You will be detained if you do not comply with the attendance requirement of 80% attendance in each course. You have to register afresh and repeat the Semester / Year in the subsequent Academic year as per readmission rules mentioned in the Student Resource Book.',
   'For academic-related concerns, please write to us at mpstme-mum.academics@nmims.edu with the following details to ensure prompt assistance.\nStudent SAP ID | Student Name | Student Roll No. | Name of the Program | Academic Term',
 ];
+
+function buildAnnexure(drives: Drive[], slots: HourSlot[]) {
+  const byId = new Map(slots.map((s) => [s.id, s]));
+  const toMinutes = (t: string): number => {
+    const m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(t);
+    if (!m) return 0;
+    const h = Number(m[1]) % 12;
+    return (m[3] === 'PM' ? h + 12 : h) * 60 + Number(m[2]);
+  };
+  return drives
+    .map((drive) => ({
+      drive,
+      hours: drive.rowIds
+        .map((id) => byId.get(id))
+        .filter((s): s is HourSlot => Boolean(s))
+        .sort(
+          (a, b) => a.date.localeCompare(b.date) || toMinutes(a.start) - toMinutes(b.start),
+        ),
+    }))
+    .filter((block) => block.hours.length > 0);
+}
 
 export default function ReportView() {
   const { state } = useApp();
@@ -39,6 +60,9 @@ export default function ReportView() {
 
   const th = 'border border-zinc-500 px-2 py-1.5 text-left font-bold';
   const td = 'border border-zinc-500 px-2 py-1.5 align-top';
+
+  const annexure = buildAnnexure(state.drives, state.parsed.slots);
+  const totalCredited = annexure.reduce((sum, b) => sum + b.hours.length, 0);
 
   return (
     <div className="report-sheet mx-auto text-zinc-900">
@@ -116,7 +140,49 @@ export default function ReportView() {
         This is system generated attendance report and needs no signature....
       </p>
 
-      {/* Annexure rendered in Task 15 */}
+      {annexure.length > 0 && (
+        <section className="page-break mt-10">
+          <h2 className="text-center text-[12px] font-bold uppercase tracking-wide">
+            Annexure — Placement Drive Excusals
+          </h2>
+          <p className="mt-3 text-[10px] leading-relaxed">
+            The following {totalCredited} hour{totalCredited === 1 ? '' : 's'} were missed due to
+            placement drives and are credited as present attendance in the report above.
+          </p>
+
+          {annexure.map((block, i) => (
+            <div key={block.drive.id} className="mt-5">
+              <p className="text-[11px] font-bold">
+                Drive {i + 1} — {block.drive.company}
+                <span className="ml-2 font-normal text-zinc-600">({block.hours.length} hour{block.hours.length === 1 ? '' : 's'})</span>
+              </p>
+              <p className="mt-1 text-[10px] leading-relaxed text-zinc-800">
+                {block.drive.description}
+              </p>
+              <table className="mt-2 w-full border-collapse text-[9.5px]">
+                <thead>
+                  <tr className="bg-zinc-100">
+                    <th className={`${th} w-[24%]`}>Date</th>
+                    <th className={`${th} w-[26%]`}>Time Slot</th>
+                    <th className={`${th} w-[32%]`}>Subject</th>
+                    <th className={`${th} w-[18%]`}>Lecture Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.hours.map((hour) => (
+                    <tr key={hour.id}>
+                      <td className={td}>{formatDayLabel(hour.date)}</td>
+                      <td className={td}>{formatTimeRange(hour.start, hour.end)}</td>
+                      <td className={td}>{hour.courseName}</td>
+                      <td className={td}>{hour.lectureType}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   );
 }
