@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   appReducer,
   initialState,
-  type Action,
   type AppState,
 } from '../lib/storeReducer';
 import type { HourSlot, ParsedAttendance } from '../lib/types';

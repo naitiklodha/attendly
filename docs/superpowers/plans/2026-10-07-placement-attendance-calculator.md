@@ -1478,7 +1478,6 @@ import { describe, expect, it } from 'vitest';
 import {
   appReducer,
   initialState,
-  type Action,
   type AppState,
 } from '../lib/storeReducer';
 import type { HourSlot, ParsedAttendance } from '../lib/types';
@@ -1558,9 +1557,10 @@ describe('appReducer', () => {
   it('ADD_DRIVE refuses empty selection or blank fields', () => {
     const state = readyState();
     expect(appReducer(state, { type: 'ADD_DRIVE', company: '', description: 'd' })).toBe(state);
+    const emptySelection = { ...state, selection: [] };
     expect(
-      appReducer({ ...state, selection: [] }, { type: 'ADD_DRIVE', company: 'TCS', description: 'd' }),
-    ).toBe(state);
+      appReducer(emptySelection, { type: 'ADD_DRIVE', company: 'TCS', description: 'd' }),
+    ).toBe(emptySelection);
   });
 
   it('ADD_DRIVE saves trimmed values, clears selection, sets notice', () => {
@@ -1619,16 +1619,19 @@ describe('appReducer', () => {
     state = { ...state, drives: [{ id: 'd1', company: 'TCS', description: 'd', rowIds: [2] }] };
     state = appReducer(state, { type: 'DELETE_DRIVE', id: 'd1' });
     expect(state.drives).toHaveLength(0);
-    expect(state.notice).toContain('removed');
+    expect(state.notice).toContain('Removed TCS drive');
   });
 
   it('SET_DRIVES filters ids that are not taggable', () => {
     const state = appReducer(readyState(), {
       type: 'SET_DRIVES',
-      drives: [{ id: 'x', company: 'Wipro', description: 'd', rowIds: [4, 99] }],
+      drives: [
+        { id: 'x', company: 'Wipro', description: 'd', rowIds: [2, 99] },
+        { id: 'y', company: 'HCL', description: 'd', rowIds: [4, 99] },
+      ],
     });
-    expect(state.drives[0].rowIds).toEqual([]);
-    expect(state.drives).toHaveLength(0);
+    expect(state.drives).toHaveLength(1);
+    expect(state.drives[0].rowIds).toEqual([2]);
   });
 
   it('RESET returns to initial state', () => {
@@ -1857,7 +1860,7 @@ export function appReducer(state: AppState, action: Action): AppState {
 npx vitest run tests/storeReducer.test.ts
 ```
 
-Expected: PASS, 14 tests.
+Expected: PASS, 13 tests.
 
 - [ ] **Step 5: Implement `lib/store.tsx` (provider + hook)**
 
