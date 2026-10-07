@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import AbsentHourList from './AbsentHourList';
+import DrivesPanel from './DrivesPanel';
 import NoticeToast from './NoticeToast';
 import SubjectCards from './SubjectCards';
 import TopBar from './TopBar';
@@ -36,7 +37,9 @@ export default function Dashboard() {
         <SubjectCards />
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <AbsentHourList />
-          <div className="space-y-6" />
+          <div className="space-y-6">
+            <DrivesPanel />
+          </div>
         </div>
       </main>
       <NoticeToast />
