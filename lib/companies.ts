@@ -19,6 +19,7 @@ export const DEFAULT_COMPANIES = [
   'Marsh',
   'Morgan Stanley',
   'Quantiphi',
+  'Saint Gobain - Loyal Recruiter',
   'TATA Trent Limited',
 ];
 
