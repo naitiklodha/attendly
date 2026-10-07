@@ -1775,13 +1775,14 @@ export function appReducer(state: AppState, action: Action): AppState {
       return { ...state, status: 'parsing', errorMessage: null };
 
     case 'PARSE_SUCCESS': {
-      const n = action.restored.length;
+      const drives = sanitizeDrives(action.restored, action.parsed);
+      const n = drives.length;
       return {
         ...state,
         status: 'ready',
         parsed: action.parsed,
         fingerprint: action.fingerprint,
-        drives: sanitizeDrives(action.restored, action.parsed),
+        drives,
         selection: [],
         editingDriveId: null,
         errorMessage: null,
