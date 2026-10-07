@@ -1,27 +1,33 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ParseError, parseAttendance, splitCourse } from '../lib/parseAttendance';
 
-const lines: string[] = JSON.parse(
-  readFileSync(path.join(process.cwd(), 'tests/fixtures/attendance-lines.json'), 'utf8'),
-);
+const lines = [
+  'Student Name Sample Student',
+  'Student Number STUDENT-TEST-001',
+  'Roll No. R001',
+  'Academic Year & Academic Session 2026-2027, Semester I',
+  'Program Name Sample Engineering Program',
+  '1 Sample SystemsP1 BTI Comp A Jan 12, 2026 10:00:01 AM 11:00:00 AM P',
+  '2 Sample SystemsP1 BTI Comp A Jan 12, 2026 11:00:01 AM 12:00:00 PM A',
+  '3 Technical WritingT1 BTI Comp A Jan 13, 2026 8:00:01 AM 9:00:00 AM NU',
+  '4 Technical WritingP1 BTI Comp A Jan 13, 2026 9:00:01 AM 10:00:00 AM E',
+];
 
 describe('splitCourse', () => {
   it('splits practical courses', () => {
-    expect(splitCourse('Cloud ComputingP1 BTI Comp B1')).toEqual({
-      courseName: 'Cloud Computing',
+    expect(splitCourse('Applied SystemsP1 BTI Comp A')).toEqual({
+      courseName: 'Applied Systems',
       typeCode: 'P1',
       lectureType: 'PRAC',
-      division: 'BTI Comp B1',
+      division: 'BTI Comp A',
     });
   });
   it('splits theory courses with multi-division groups', () => {
-    expect(splitCourse('Ethical HackingT1 BTI Comp B+C+D')).toEqual({
-      courseName: 'Ethical Hacking',
+    expect(splitCourse('Technical WritingT1 BTI Comp A+B')).toEqual({
+      courseName: 'Technical Writing',
       typeCode: 'T1',
       lectureType: 'THEO',
-      division: 'BTI Comp B+C+D',
+      division: 'BTI Comp A+B',
     });
   });
   it('returns null when no type suffix', () => {
@@ -37,11 +43,11 @@ describe('splitCourse', () => {
   });
 });
 
-describe('parseAttendance (fixture)', () => {
+describe('parseAttendance (synthetic rows)', () => {
   const parsed = parseAttendance(lines);
 
-  it('parses all 166 rows', () => {
-    expect(parsed.slots).toHaveLength(166);
+  it('parses every supplied row', () => {
+    expect(parsed.slots).toHaveLength(4);
   });
 
   it('has the expected status distribution', () => {
@@ -49,23 +55,23 @@ describe('parseAttendance (fixture)', () => {
       acc[s.status] = (acc[s.status] ?? 0) + 1;
       return acc;
     }, {});
-    expect(dist).toEqual({ P: 134, A: 26, NU: 6 });
+    expect(dist).toEqual({ P: 1, A: 1, NU: 1, E: 1 });
   });
 
   it('keeps sequential ids', () => {
     expect(parsed.slots[0].id).toBe(1);
-    expect(parsed.slots[165].id).toBe(166);
+    expect(parsed.slots[3].id).toBe(4);
   });
 
   it('parses the first row fully', () => {
     expect(parsed.slots[0]).toEqual({
       id: 1,
-      courseRaw: 'Cloud ComputingP1 BTI Comp B1',
-      courseName: 'Cloud Computing',
+      courseRaw: 'Sample SystemsP1 BTI Comp A',
+      courseName: 'Sample Systems',
       typeCode: 'P1',
       lectureType: 'PRAC',
-      division: 'BTI Comp B1',
-      date: '2026-07-13',
+      division: 'BTI Comp A',
+      date: '2026-01-12',
       start: '10:00 AM',
       end: '11:00 AM',
       status: 'P',
@@ -74,20 +80,20 @@ describe('parseAttendance (fixture)', () => {
 
   it('parses the student header', () => {
     expect(parsed.header).toEqual({
-      studentName: 'NAITIK LODHA',
-      studentNumber: '70322100139',
-      rollNo: 'C028',
-      academicYear: '2026-2027, Semester XI',
-      programName: 'B.Tech (Comp. Engg.) (Integrated)',
+      studentName: 'Sample Student',
+      studentNumber: 'STUDENT-TEST-001',
+      rollNo: 'R001',
+      academicYear: '2026-2027, Semester I',
+      programName: 'Sample Engineering Program',
     });
   });
 
   it('derives the date range', () => {
-    expect(parsed.dateRange).toEqual({ from: '2026-07-13', to: '2026-09-16' });
+    expect(parsed.dateRange).toEqual({ from: '2026-01-12', to: '2026-01-13' });
   });
 
   it('normalizes single-digit hour times', () => {
-    const slot = parsed.slots.find((s) => s.id === 9);
+    const slot = parsed.slots.find((s) => s.id === 3);
     expect(slot).toBeDefined();
     expect(slot!.start).toBe('8:00 AM');
     expect(slot!.end).toBe('9:00 AM');
@@ -105,7 +111,7 @@ describe('parseAttendance (fixture)', () => {
         'Student Number 123',
         'Roll No. X1',
         'Academic Year & Academic Session 2026-2027, Semester I',
-        'Program Name B.Tech',
+        'Program Name Sample Engineering Program',
         '9 Random Course CT Comp B1 Jul 13, 2026 10:00:01 AM 11:00:00 AM P',
       ]),
     ).toThrow(/unrecognised course format/);
@@ -118,7 +124,7 @@ describe('parseAttendance (fixture)', () => {
         'Student Number 123',
         'Roll No. X1',
         'Academic Year & Academic Session 2026-2027, Semester I',
-        'Program Name B.Tech',
+        'Program Name Sample Engineering Program',
       ]),
     ).toThrow(/No hour-wise attendance rows/);
   });

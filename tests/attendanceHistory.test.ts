@@ -5,12 +5,12 @@ import type { Drive, HourSlot, ParsedAttendance } from '../lib/types';
 function slot(id: number, partial: Partial<HourSlot> = {}): HourSlot {
     return {
         id,
-        courseRaw: 'Cloud ComputingP1 BTI Comp B1',
-        courseName: 'Cloud Computing',
+        courseRaw: 'Sample SystemsP1 BTI Comp A',
+        courseName: 'Sample Systems',
         typeCode: 'P1',
         lectureType: 'PRAC',
-        division: 'BTI Comp B1',
-        date: '2026-07-13',
+        division: 'BTI Comp A',
+        date: '2026-01-12',
         start: '10:00 AM',
         end: '11:00 AM',
         status: 'A',
@@ -23,10 +23,10 @@ function parsed(slots: HourSlot[], studentName = 'Student'): ParsedAttendance {
     return {
         header: {
             studentName,
-            studentNumber: '70322100139',
-            rollNo: 'C028',
+            studentNumber: 'STUDENT-TEST-001',
+            rollNo: 'R001',
             academicYear: '2026-2027, Semester XI',
-            programName: 'B.Tech',
+            programName: 'Sample Program',
         },
         slots,
         dateRange: { from: dates[0] ?? '', to: dates.at(-1) ?? '' },
@@ -37,7 +37,7 @@ describe('mergeAttendanceHistory', () => {
     it('keeps stored slot data and drive assignment while appending only new slots', () => {
         const oldSlot = slot(7, { status: 'A' });
         const newSlot = slot(8, {
-            date: '2026-07-14',
+            date: '2026-01-13',
             start: '11:00 AM',
             end: '12:00 PM',
         });
@@ -59,7 +59,7 @@ describe('mergeAttendanceHistory', () => {
             id: 8,
         });
         expect(result.parsed.header.studentName).toBe('Updated Student');
-        expect(result.parsed.dateRange).toEqual({ from: '2026-07-13', to: '2026-07-14' });
+        expect(result.parsed.dateRange).toEqual({ from: '2026-01-12', to: '2026-01-13' });
         expect(result.drives).toEqual(drives);
     });
 
@@ -75,7 +75,7 @@ describe('mergeAttendanceHistory', () => {
     it('assigns unseen slots IDs above every existing row ID', () => {
         const existing = parsed([slot(20)]);
         const incoming = parsed([
-            slot(1, { date: '2026-07-14', start: '11:00 AM', end: '12:00 PM' }),
+            slot(1, { date: '2026-01-13', start: '11:00 AM', end: '12:00 PM' }),
         ]);
 
         const result = mergeAttendanceHistory({ parsed: existing, drives: [] }, incoming);

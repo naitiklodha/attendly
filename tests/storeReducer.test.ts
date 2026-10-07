@@ -6,14 +6,14 @@ import {
 } from '../lib/storeReducer';
 import type { HourSlot, ParsedAttendance } from '../lib/types';
 
-function slot(id: number, status: HourSlot['status'], date = '2026-07-13'): HourSlot {
+function slot(id: number, status: HourSlot['status'], date = '2026-01-12'): HourSlot {
   return {
     id,
-    courseRaw: 'Cloud ComputingP1 BTI Comp B1',
-    courseName: 'Cloud Computing',
+    courseRaw: 'Sample CourseP1 BTI Comp A',
+    courseName: 'Sample Course',
     typeCode: 'P1',
     lectureType: 'PRAC',
-    division: 'BTI Comp B1',
+    division: 'BTI Comp A',
     date,
     start: '10:00 AM',
     end: '11:00 AM',
@@ -24,14 +24,14 @@ function slot(id: number, status: HourSlot['status'], date = '2026-07-13'): Hour
 function readyState(): AppState {
   const parsed: ParsedAttendance = {
     header: {
-      studentName: 'NAITIK LODHA',
-      studentNumber: '70322100139',
-      rollNo: 'C028',
-      academicYear: '2026-2027, Semester XI',
-      programName: 'B.Tech',
+      studentName: 'Sample Student',
+      studentNumber: 'STUDENT-TEST-001',
+      rollNo: 'R001',
+      academicYear: '2026-2027, Semester I',
+      programName: 'Sample Program',
     },
-    slots: [slot(1, 'P'), slot(2, 'A'), slot(3, 'A', '2026-07-14'), slot(4, 'NU')],
-    dateRange: { from: '2026-07-13', to: '2026-07-14' },
+    slots: [slot(1, 'P'), slot(2, 'A'), slot(3, 'A', '2026-01-13'), slot(4, 'NU')],
+    dateRange: { from: '2026-01-12', to: '2026-01-13' },
   };
   return appReducer(initialState, {
     type: 'PARSE_SUCCESS',
@@ -80,22 +80,22 @@ describe('appReducer', () => {
   });
 
   it('SELECT_DATE selects all A slots of that date only', () => {
-    const state = appReducer(readyState(), { type: 'SELECT_DATE', date: '2026-07-14' });
+    const state = appReducer(readyState(), { type: 'SELECT_DATE', date: '2026-01-13' });
     expect(state.selection).toEqual([3]);
   });
 
   it('SELECT_DATE adds to the existing selection', () => {
     let state = readyState();
     state = appReducer(state, { type: 'TOGGLE_SELECT', id: 2 });
-    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-01-13' });
     expect([...state.selection].sort((a, b) => a - b)).toEqual([2, 3]);
   });
 
   it('SELECT_DATE clears the date once every hour is already selected', () => {
     let state = readyState();
-    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-01-13' });
     expect(state.selection).toEqual([3]);
-    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-07-14' });
+    state = appReducer(state, { type: 'SELECT_DATE', date: '2026-01-13' });
     expect(state.selection).toEqual([]);
   });
 

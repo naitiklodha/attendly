@@ -3,10 +3,10 @@
 import { motion } from 'framer-motion';
 
 const ROWS = [
-  { name: 'Big Data Analytics', before: 64.71, after: 100 },
-  { name: 'Deep Learning', before: 81.25, after: 100 },
-  { name: 'Introduction to Linguistics', before: 80.77, after: 100 },
-  { name: 'Cloud Computing', before: 94.12, after: 100 },
+  { name: 'Applied Systems', before: 68, after: 84 },
+  { name: 'Technical Writing', before: 77, after: 88 },
+  { name: 'Data Methods', before: 74, after: 82 },
+  { name: 'Network Design', before: 71, after: 79 },
 ];
 
 export default function HeroArt() {
@@ -15,7 +15,7 @@ export default function HeroArt() {
       <div className="flex items-baseline justify-between">
         <p className="t-eyebrow text-ink-tertiary">After placement credit</p>
         <span className="rounded-full border border-hairline bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-ink-subtle">
-          12 hrs credited
+          4 hrs credited
         </span>
       </div>
 
@@ -64,7 +64,7 @@ export default function HeroArt() {
         <p className="text-[12px] text-ink-tertiary">
           Dashed line marks the 80% requirement
         </p>
-        <p className="font-mono text-[12px] text-ink-subtle">100.00% · eligible</p>
+        <p className="font-mono text-[12px] text-ink-subtle">88.00% · eligible</p>
       </div>
     </div>
   );

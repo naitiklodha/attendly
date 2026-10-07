@@ -9,8 +9,7 @@
     "lint": "eslint",
     "postinstall": "node scripts/copy-worker.mjs",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "fixture": "tsx scripts/make-fixture.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

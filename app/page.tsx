@@ -321,7 +321,7 @@ export default function LandingPage() {
                 <span className="h-2.5 w-2.5 rounded-full bg-surface-4" />
                 <span className="h-2.5 w-2.5 rounded-full bg-surface-4" />
                 <span className="ml-2 font-mono text-[12px] text-ink-tertiary">
-                  NAITIK LODHA · C028 · 13.07.2026 → 16.09.2026
+                  SAMPLE STUDENT · R001 · 01.01.2026 → 28.02.2026
                 </span>
               </div>
               <div className="grid gap-0 md:grid-cols-[1.35fr_1fr]">
@@ -329,10 +329,10 @@ export default function LandingPage() {
                   <p className="t-eyebrow text-ink-tertiary">Course attendance</p>
                   <ul className="mt-4 space-y-3.5">
                     {[
-                      ['Cloud Computing', '94.12%', '32/34 hrs', 94],
-                      ['Ethical Hacking', '97.06%', '33/34 hrs', 97],
-                      ['Deep Learning', '81.25%', '26/32 hrs', 81],
-                      ['Big Data Analytics', '100.00%', '34/34 hrs · +12 credited', 100],
+                      ['Applied Systems', '80.00%', '8/10 hrs', 80],
+                      ['Technical Writing', '75.00%', '6/8 hrs', 75],
+                      ['Data Methods', '72.00%', '6/8 hrs', 72],
+                      ['Network Design', '90.00%', '9/10 hrs · +1 credited', 90],
                     ].map(([name, pct, hrs, w]) => (
                       <li key={name as string}>
                         <div className="flex items-baseline justify-between gap-3">
@@ -482,10 +482,10 @@ export default function LandingPage() {
                 <div className="border-t border-hairline p-7 md:border-t-0">
                   <p className="t-eyebrow text-ink-tertiary">Adjusted estimate</p>
                   <p className="mt-4 font-mono text-[52px] font-medium leading-none tracking-[-2px] text-success">
-                    81.25%
+                    82.00%
                   </p>
                   <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-surface-3">
-                    <span className="block h-full rounded-full bg-success" style={{ width: '81.25%' }} />
+                    <span className="block h-full rounded-full bg-success" style={{ width: '82%' }} />
                   </div>
                   <p className="mt-3 text-[13px] text-primary">+12 placement hours marked</p>
                 </div>
@@ -544,7 +544,7 @@ export default function LandingPage() {
                     <div className="rounded-lg border border-hairline bg-surface-2 p-5">
                       <p className="t-eyebrow text-[#e06c75]">Not this</p>
                       <p className="mt-2 text-[15px] text-ink-muted">
-                        &ldquo;The website says I&rsquo;m officially at 81.25%.&rdquo;
+                        &ldquo;The website says I&rsquo;m officially above the requirement.&rdquo;
                       </p>
                     </div>
                   </div>

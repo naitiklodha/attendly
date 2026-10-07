@@ -171,16 +171,16 @@ export default function UploadScreen() {
           <div className="panel p-6">
             <p className="t-eyebrow text-ink-tertiary">Sample output</p>
             <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <span className="font-mono text-[15px] text-ink-tertiary line-through">64.71%</span>
+              <span className="font-mono text-[15px] text-ink-tertiary line-through">72.00%</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-ink-tertiary">
                 <path d="M5 12h14m-6-6 6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span className="font-mono text-[30px] font-medium tracking-[-1.5px] text-success">
-                100.00%
+                84.00%
               </span>
             </div>
             <p className="mt-2 text-[13px] text-ink-subtle">
-              Big Data Analytics · 12 hours credited
+              Sample course · 4 hours credited
             </p>
           </div>
 

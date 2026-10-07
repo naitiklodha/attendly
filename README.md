@@ -35,5 +35,4 @@ history and drive assignments auto-save in localStorage, keyed by SAP student nu
 
 ```bash
 npm test
-npm run fixture   # regenerate tests/fixtures from the sample PDF
 ```

@@ -22,11 +22,11 @@ function memoryStore(): KeyValueStore & { data: Map<string, string> } {
 }
 
 const header: StudentHeader = {
-  studentName: 'NAITIK LODHA',
-  studentNumber: '70322100139',
-  rollNo: 'C028',
+  studentName: 'Sample Student',
+  studentNumber: 'STUDENT-TEST-001',
+  rollNo: 'R001',
   academicYear: '2026-2027, Semester XI',
-  programName: 'B.Tech (Comp. Engg.) (Integrated)',
+  programName: 'Sample Engineering Program',
 };
 
 const drives: Drive[] = [{ id: 'd1', company: 'TCS', description: 'TCS drive', rowIds: [16, 17] }];
@@ -73,7 +73,7 @@ describe('saveStudentHistory / loadStudentHistory', () => {
     parsed: {
       header,
       slots: [],
-      dateRange: { from: '2026-07-13', to: '2026-07-13' },
+      dateRange: { from: '2026-01-12', to: '2026-01-12' },
     },
     drives,
   };
@@ -96,7 +96,7 @@ describe('saveStudentHistory / loadStudentHistory', () => {
 
   it('ignores malformed student history', () => {
     const store = memoryStore();
-    store.setItem('attcalc:v2:student:70322100139', '{not json');
+    store.setItem('attcalc:v2:student:STUDENT-TEST-001', '{not json');
 
     expect(loadStudentHistory(header.studentNumber, store)).toBeNull();
   });

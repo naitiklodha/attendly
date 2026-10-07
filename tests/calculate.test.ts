@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   buildDashboard,
@@ -8,7 +6,6 @@ import {
   pct,
   summarize,
 } from '../lib/calculate';
-import { parseAttendance } from '../lib/parseAttendance';
 import type { Drive, HourSlot } from '../lib/types';
 
 let autoId = 0;
@@ -21,7 +18,7 @@ function slot(partial: Partial<HourSlot>): HourSlot {
     typeCode: 'P1',
     lectureType: 'PRAC',
     division: 'BTI Comp B',
-    date: '2026-07-13',
+    date: '2026-01-12',
     start: '10:00 AM',
     end: '11:00 AM',
     status: 'P',
@@ -31,41 +28,40 @@ function slot(partial: Partial<HourSlot>): HourSlot {
 
 describe('pct', () => {
   it('reproduces the official sheet percentages', () => {
-    expect(pct(32, 42)).toBe(76.19);
-    expect(pct(30, 46)).toBe(65.22);
-    expect(pct(41, 44)).toBe(93.18);
-    expect(pct(40, 44)).toBe(90.91);
-    expect(pct(28, 34)).toBe(82.35);
+    expect(pct(5, 6)).toBe(83.33);
+    expect(pct(7, 9)).toBe(77.78);
+    expect(pct(2, 3)).toBe(66.67);
+    expect(pct(9, 10)).toBe(90);
+    expect(pct(17, 20)).toBe(85);
   });
   it('guards zero denominators', () => {
     expect(pct(0, 0)).toBe(0);
   });
 });
-
 describe('summarize', () => {
   it('groups per course + lecture type and shows percentage once per course', () => {
     const slots: HourSlot[] = [
-      ...Array.from({ length: 24 }, (_, i) =>
-        slot({ courseName: 'Deep Learning', courseRaw: 'Deep LearningP1', typeCode: 'P1', lectureType: 'PRAC', status: i < 20 ? 'P' : 'A', id: 1000 + i }),
+      ...Array.from({ length: 10 }, (_, i) =>
+        slot({ courseName: 'Sample Course', courseRaw: 'Sample CourseP1', typeCode: 'P1', lectureType: 'PRAC', status: i < 8 ? 'P' : 'A', id: 1000 + i }),
       ),
-      ...Array.from({ length: 18 }, (_, i) =>
-        slot({ courseName: 'Deep Learning', courseRaw: 'Deep LearningT1', typeCode: 'T1', lectureType: 'THEO', status: i < 12 ? 'P' : 'A', id: 2000 + i }),
+      ...Array.from({ length: 8 }, (_, i) =>
+        slot({ courseName: 'Sample Course', courseRaw: 'Sample CourseT1', typeCode: 'T1', lectureType: 'THEO', status: i < 5 ? 'P' : 'A', id: 2000 + i }),
       ),
     ];
     const [summary] = summarize(slots, new Set());
-    expect(summary.percentage).toBe(76.19);
-    expect(summary.conducted).toBe(42);
-    expect(summary.attended).toBe(32);
+    expect(summary.percentage).toBe(72.22);
+    expect(summary.conducted).toBe(18);
+    expect(summary.attended).toBe(13);
     expect(summary.lines).toHaveLength(2);
     expect(summary.lines[0]).toMatchObject({
-      courseName: 'DEEP LEARNING',
-      courseRaw: 'DEEP LEARNINGP1',
+      courseName: 'SAMPLE COURSE',
+      courseRaw: 'SAMPLE COURSEP1',
       division: 'BTI COMP B',
       lectureType: 'PRAC',
-      conducted: 24,
-      attended: 20,
+      conducted: 10,
+      attended: 8,
     });
-    expect(summary.lines[1]).toMatchObject({ lectureType: 'THEO', conducted: 18, attended: 12 });
+    expect(summary.lines[1]).toMatchObject({ lectureType: 'THEO', conducted: 8, attended: 5 });
   });
 
   it('merges interleaved lecture types into one line each', () => {
@@ -116,9 +112,9 @@ describe('summarize', () => {
 describe('buildDashboard', () => {
   it('returns original vs corrected per subject', () => {
     const slots = [
-      slot({ courseName: 'Big Data Analytics', courseRaw: 'Big Data AnalyticsP1', status: 'P' }),
-      slot({ courseName: 'Big Data Analytics', courseRaw: 'Big Data AnalyticsP1', status: 'A' }),
-      slot({ courseName: 'Big Data Analytics', courseRaw: 'Big Data AnalyticsP1', status: 'A' }),
+      slot({ courseName: 'Sample Course', courseRaw: 'Sample CourseP1', status: 'P' }),
+      slot({ courseName: 'Sample Course', courseRaw: 'Sample CourseP1', status: 'A' }),
+      slot({ courseName: 'Sample Course', courseRaw: 'Sample CourseP1', status: 'A' }),
     ];
     const drives: Drive[] = [
       { id: 'd1', company: 'TCS', description: 'Drive', rowIds: [slots[1].id] },
@@ -133,9 +129,9 @@ describe('buildDashboard', () => {
 
   it('previews selected hours before they are saved to a drive', () => {
     const slots = [
-      slot({ id: 20, courseName: 'Cloud Computing', status: 'P' }),
-      slot({ id: 21, courseName: 'Cloud Computing', status: 'A' }),
-      slot({ id: 22, courseName: 'Cloud Computing', status: 'A' }),
+      slot({ id: 20, courseName: 'Sample Course', status: 'P' }),
+      slot({ id: 21, courseName: 'Sample Course', status: 'A' }),
+      slot({ id: 22, courseName: 'Sample Course', status: 'A' }),
     ];
     const drives: Drive[] = [
       { id: 'd1', company: 'TCS', description: 'Drive', rowIds: [21] },
@@ -151,40 +147,14 @@ describe('buildDashboard', () => {
 describe('groupAbsentByDate', () => {
   it('groups only A slots, sorted by date', () => {
     const slots = [
-      slot({ date: '2026-07-14', status: 'A' }),
-      slot({ date: '2026-07-13', status: 'A' }),
-      slot({ date: '2026-07-13', status: 'P' }),
-      slot({ date: '2026-07-13', status: 'NU' }),
+      slot({ date: '2026-01-13', status: 'A' }),
+      slot({ date: '2026-01-12', status: 'A' }),
+      slot({ date: '2026-01-12', status: 'P' }),
+      slot({ date: '2026-01-12', status: 'NU' }),
     ];
     const groups = groupAbsentByDate(slots);
-    expect(groups.map((g) => g.date)).toEqual(['2026-07-13', '2026-07-14']);
+    expect(groups.map((g) => g.date)).toEqual(['2026-01-12', '2026-01-13']);
     expect(groups[0].slots).toHaveLength(1);
     expect(groups[1].slots).toHaveLength(1);
-  });
-});
-
-describe('sample PDF regression (fixture)', () => {
-  const lines: string[] = JSON.parse(
-    readFileSync(path.join(process.cwd(), 'tests/fixtures/attendance-lines.json'), 'utf8'),
-  );
-  const parsed = parseAttendance(lines);
-
-  it('reproduces the original per-subject percentages', () => {
-    const rows = buildDashboard(parsed.slots, new Set());
-    const byName = Object.fromEntries(rows.map((r) => [r.courseName, r.originalPct]));
-    expect(byName).toEqual({
-      'Cloud Computing': 94.12,
-      'Ethical Hacking': 97.06,
-      'Introduction to Linguistics': 80.77,
-      'Deep Learning': 81.25,
-      'Big Data Analytics': 64.71,
-    });
-  });
-
-  it('reaches 100% on every subject when all absents are credited', () => {
-    const allAbsent = parsed.slots.filter((s) => s.status === 'A').map((s) => s.id);
-    expect(allAbsent).toHaveLength(26);
-    const rows = buildDashboard(parsed.slots, creditedIds([{ id: 'all', company: 'X', description: 'Y', rowIds: allAbsent }]));
-    expect(rows.every((r) => r.correctedPct === 100)).toBe(true);
   });
 });
