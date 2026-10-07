@@ -1,10 +1,17 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { PlusIcon } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { loadCompanies, refreshCompanies, rememberCompany } from '@/lib/companies';
 import CompanyCombobox from '@/components/CompanyCombobox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function DrivesPanel() {
   const { state, dispatch } = useApp();
@@ -26,7 +33,20 @@ export default function DrivesPanel() {
 
 
   const active = editing ?? null;
-  const canForm = Boolean(active) || state.selection.length > 0;
+
+  const openNewDrive = () => {
+    setCompany('');
+    setDescription('');
+    setError(null);
+    dispatch({ type: 'OPEN_NEW_DRIVE' });
+  };
+
+  const closeNewDrive = () => {
+    setCompany('');
+    setDescription('');
+    setError(null);
+    dispatch({ type: 'CLOSE_NEW_DRIVE' });
+  };
 
   const startEdit = (id: string) => {
     const drive = state.drives.find((d) => d.id === id);
@@ -43,6 +63,8 @@ export default function DrivesPanel() {
     setError(null);
     dispatch({ type: 'CANCEL_EDIT' });
   };
+
+  const cancelForm = active ? cancel : closeNewDrive;
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -68,59 +90,70 @@ export default function DrivesPanel() {
     setError(null);
   };
 
+  const driveForm = (
+    <form onSubmit={submit} className="space-y-2.5">
+      <CompanyCombobox
+        value={company}
+        onChange={setCompany}
+        options={companies}
+        placeholder="Company (e.g. TCS)"
+      />
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Description (optional, e.g. TCS National Qualifier — Slot 2)"
+        rows={2}
+        className="field resize-none"
+      />
+      {error && <p className="text-[13px] font-medium text-[#e06c75]">{error}</p>}
+      <div className="flex gap-2 pt-1">
+        <button type="button" onClick={cancelForm} className="btn-secondary">
+          Cancel
+        </button>
+        <button type="submit" className="btn-primary flex-1">
+          {active ? 'Update drive' : 'Save and assign drive'}
+        </button>
+      </div>
+    </form>
+  );
+
   return (
     <section className="panel overflow-hidden">
-      <div className="p-5">
-        <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">
-          {active ? `Edit drive — ${active.company}` : 'New drive'}
-        </h2>
-        <p className="mt-0.5 text-[12px] text-ink-tertiary">
-          {active || state.selection.length > 0
-            ? `${state.selection.length} hour${state.selection.length === 1 ? '' : 's'} selected`
-            : 'Tick hours in the list to open the form.'}
-        </p>
-
-        <AnimatePresence initial={false}>
-          {canForm && (
-            <motion.form
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              onSubmit={submit}
-              className="overflow-hidden"
+      {active ? (
+        <div className="p-5">
+          <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">
+            Edit drive — {active.company}
+          </h2>
+          <p aria-live="polite" className="mt-1 text-[13px] font-medium text-primary">
+            {state.selection.length} hour{state.selection.length === 1 ? '' : 's'} selected
+          </p>
+          <div className="mt-4">{driveForm}</div>
+        </div>
+      ) : (
+        <div className="hidden p-5 lg:block">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">
+                New drive
+              </h2>
+              <p aria-live="polite" className="mt-1 text-[12px] text-ink-tertiary">
+                {state.selection.length > 0
+                  ? `${state.selection.length} hour${state.selection.length === 1 ? '' : 's'} selected · attendance preview updated`
+                  : 'Select absent hours to create and assign a drive.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openNewDrive}
+              disabled={state.selection.length === 0}
+              className="btn-primary shrink-0 gap-1.5 px-3 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="mt-4 space-y-2.5">
-                <CompanyCombobox
-                  value={company}
-                  onChange={setCompany}
-                  options={companies}
-                  placeholder="Company (e.g. TCS)"
-                />
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Description (optional, e.g. TCS National Qualifier — Slot 2)"
-                  rows={2}
-                  className="field resize-none"
-                />
-                {error && (
-                  <p className="text-[13px] font-medium text-[#e06c75]">{error}</p>
-                )}
-                <div className="flex gap-2">
-                  <button type="submit" className="btn-primary flex-1">
-                    {active ? 'Update drive' : 'Save drive'}
-                  </button>
-                  {active && (
-                    <button type="button" onClick={cancel} className="btn-secondary">
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.form>
-          )}
-        </AnimatePresence>
-      </div>
+              <PlusIcon aria-hidden="true" className="size-4" />
+              New drive
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="border-t border-hairline p-5">
         <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">Saved drives</h2>
@@ -162,6 +195,25 @@ export default function DrivesPanel() {
           </ul>
         )}
       </div>
+
+      <Dialog
+        open={!active && state.newDriveOpen}
+        onOpenChange={(open) => {
+          if (!open) closeNewDrive();
+        }}
+      >
+        <DialogContent className="top-auto bottom-0 left-0 max-h-[90dvh] w-full max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-b-none p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] sm:max-w-none lg:top-1/2 lg:bottom-auto lg:left-1/2 lg:max-w-md lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl lg:p-6">
+          <DialogHeader className="pr-8">
+            <DialogTitle>New placement drive</DialogTitle>
+            <DialogDescription>
+              Assign {state.selection.length} selected hour
+              {state.selection.length === 1 ? '' : 's'} to a new drive. Attendance preview is
+              already updated.
+            </DialogDescription>
+          </DialogHeader>
+          {driveForm}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

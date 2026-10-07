@@ -12,9 +12,10 @@ export function pct(attended: number, conducted: number): number {
   return Math.round((attended / conducted) * 10000) / 100;
 }
 
-export function creditedIds(drives: Drive[]): Set<number> {
+export function creditedIds(drives: Drive[], pendingIds: Iterable<number> = []): Set<number> {
   const set = new Set<number>();
   for (const drive of drives) for (const id of drive.rowIds) set.add(id);
+  for (const id of pendingIds) set.add(id);
   return set;
 }
 

@@ -143,6 +143,14 @@ export function mergeCompanies(...lists: string[][]): string[] {
   return [...seen.values()].sort((a, b) => a.localeCompare(b));
 }
 
+export function filterCompanySuggestions(options: string[], value: string): string[] {
+  const query = value.trim().toLowerCase();
+  return options.filter((option) => {
+    const normalized = option.toLowerCase();
+    return normalized !== query && (!query || normalized.includes(query));
+  });
+}
+
 export function loadCompanies(): string[] {
   return mergeCompanies(readList(SHEET_CACHE_KEY), rememberedCompanies(), DEFAULT_COMPANIES);
 }

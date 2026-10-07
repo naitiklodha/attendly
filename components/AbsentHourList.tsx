@@ -4,6 +4,7 @@ import { groupAbsentByDate } from '@/lib/calculate';
 import { formatDayLabel, formatTimeRange } from '@/lib/format';
 import { useApp } from '@/lib/store';
 import type { HourSlot } from '@/lib/types';
+import { PlusIcon } from 'lucide-react';
 
 function ownerOf<T extends { id: string; rowIds: number[] }>(slotId: number, drives: T[]) {
   return drives.find((d) => d.rowIds.includes(slotId)) ?? null;
@@ -39,6 +40,23 @@ export default function AbsentHourList() {
             <span className="font-mono text-[12px] text-ink-subtle">
               {state.selection.length} selected
             </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => dispatch({ type: 'OPEN_NEW_DRIVE' })}
+                disabled={state.selection.length === 0}
+                aria-describedby={state.selection.length === 0 ? 'drive-selection-help' : undefined}
+                className="btn-secondary gap-1.5 px-3 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <PlusIcon aria-hidden="true" className="size-4" />
+                Add drive
+              </button>
+              {state.selection.length === 0 && (
+                <span id="drive-selection-help" className="text-[11px] text-ink-tertiary">
+                  Select hours first
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => dispatch({ type: 'SELECT_ALL' })}
@@ -67,67 +85,66 @@ export default function AbsentHourList() {
             ).length;
 
             return (
-            <li key={group.date}>
-              <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-hairline bg-surface-2/95 px-5 py-1.5 backdrop-blur">
-                {!editing && (
-                  <input
-                    type="checkbox"
-                    aria-label={`Select every hour on ${formatDayLabel(group.date)}`}
-                    checked={daySelectable > 0 && daySelected === daySelectable}
-                    disabled={daySelectable === 0}
-                    onChange={() => dispatch({ type: 'SELECT_DATE', date: group.date })}
-                    className="h-4 w-4 shrink-0 cursor-pointer rounded-xs border-hairline-strong bg-surface-1 accent-primary disabled:cursor-not-allowed disabled:opacity-40"
-                  />
-                )}
-                <span className="t-eyebrow text-ink-subtle">{formatDayLabel(group.date)}</span>
-                {!editing && (
-                  <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-tertiary">
-                    {daySelected}/{daySelectable}
-                  </span>
-                )}
-              </div>
-              <ul className="divide-y divide-hairline/70">
-                {group.slots.map((slot: HourSlot) => {
-                  const owner = ownerOf(slot.id, state.drives);
-                  const checked = state.selection.includes(slot.id);
-                  const disabled = Boolean(owner && owner.id !== editing);
-                  return (
-                    <li
-                      key={slot.id}
-                      className={`flex items-center gap-3 px-5 py-2.5 transition ${
-                        checked ? 'bg-primary/10' : 'hover:bg-surface-2/60'
-                      } ${disabled ? 'opacity-50' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        disabled={disabled}
-                        onChange={() => dispatch({ type: 'TOGGLE_SELECT', id: slot.id })}
-                        className="h-4 w-4 shrink-0 cursor-pointer rounded-xs border-hairline-strong bg-surface-1 accent-primary"
-                      />
-                      <span className="w-36 shrink-0 font-mono text-[12px] tabular-nums text-ink-tertiary">
-                        {formatTimeRange(slot.start, slot.end)}
-                      </span>
-                      <span className="flex-1 truncate text-[14px] text-ink-muted">
-                        {slot.courseName}
-                      </span>
-                      <span className="hidden shrink-0 font-mono text-[11px] uppercase text-ink-tertiary sm:block">
-                        {slot.lectureType}
-                      </span>
-                      {owner ? (
-                        <span className="shrink-0 rounded-full border border-hairline bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-ink-subtle">
-                          Excused · {owner.company}
+              <li key={group.date}>
+                <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-hairline bg-surface-2/95 px-5 py-1.5 backdrop-blur">
+                  {!editing && (
+                    <input
+                      type="checkbox"
+                      aria-label={`Select every hour on ${formatDayLabel(group.date)}`}
+                      checked={daySelectable > 0 && daySelected === daySelectable}
+                      disabled={daySelectable === 0}
+                      onChange={() => dispatch({ type: 'SELECT_DATE', date: group.date })}
+                      className="h-4 w-4 shrink-0 cursor-pointer rounded-xs border-hairline-strong bg-surface-1 accent-primary disabled:cursor-not-allowed disabled:opacity-40"
+                    />
+                  )}
+                  <span className="t-eyebrow text-ink-subtle">{formatDayLabel(group.date)}</span>
+                  {!editing && (
+                    <span className="ml-auto font-mono text-[11px] tabular-nums text-ink-tertiary">
+                      {daySelected}/{daySelectable}
+                    </span>
+                  )}
+                </div>
+                <ul className="divide-y divide-hairline/70">
+                  {group.slots.map((slot: HourSlot) => {
+                    const owner = ownerOf(slot.id, state.drives);
+                    const checked = state.selection.includes(slot.id);
+                    const disabled = Boolean(owner && owner.id !== editing);
+                    return (
+                      <li
+                        key={slot.id}
+                        className={`flex items-center gap-3 px-5 py-2.5 transition ${checked ? 'bg-primary/10' : 'hover:bg-surface-2/60'
+                          } ${disabled ? 'opacity-50' : ''}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() => dispatch({ type: 'TOGGLE_SELECT', id: slot.id })}
+                          className="h-4 w-4 shrink-0 cursor-pointer rounded-xs border-hairline-strong bg-surface-1 accent-primary"
+                        />
+                        <span className="w-36 shrink-0 font-mono text-[12px] tabular-nums text-ink-tertiary">
+                          {formatTimeRange(slot.start, slot.end)}
                         </span>
-                      ) : (
-                        <span className="shrink-0 rounded-full border border-hairline-strong bg-surface-3 px-2.5 py-0.5 font-mono text-[11px] text-[#e06c75]">
-                          Absent
+                        <span className="flex-1 truncate text-[14px] text-ink-muted">
+                          {slot.courseName}
                         </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </li>
+                        <span className="hidden shrink-0 font-mono text-[11px] uppercase text-ink-tertiary sm:block">
+                          {slot.lectureType}
+                        </span>
+                        {owner ? (
+                          <span className="shrink-0 rounded-full border border-hairline bg-surface-2 px-2.5 py-0.5 font-mono text-[11px] text-ink-subtle">
+                            Excused · {owner.company}
+                          </span>
+                        ) : (
+                          <span className="shrink-0 rounded-full border border-hairline-strong bg-surface-3 px-2.5 py-0.5 font-mono text-[11px] text-[#e06c75]">
+                            Absent
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </li>
             );
           })}
         </ul>

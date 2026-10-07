@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_COMPANIES,
+  filterCompanySuggestions,
   loadCompanies,
   mergeCompanies,
   parseCompanyCsv,
@@ -43,6 +44,20 @@ describe('mergeCompanies', () => {
   });
   it('sorts the combined list', () => {
     expect(mergeCompanies(['Wipro'], ['Infosys'])).toEqual(['Infosys', 'Wipro']);
+  });
+});
+
+describe('filterCompanySuggestions', () => {
+  it('keeps every matching company available to the scrollable list', () => {
+    expect(filterCompanySuggestions(DEFAULT_COMPANIES, '')).toEqual(
+      [...DEFAULT_COMPANIES].sort((a, b) => a.localeCompare(b)),
+    );
+  });
+
+  it('filters case-insensitively and excludes the exact current value', () => {
+    expect(filterCompanySuggestions(['TCS', 'tcs Digital', 'Infosys'], 'tcs')).toEqual([
+      'tcs Digital',
+    ]);
   });
 });
 

@@ -130,6 +130,22 @@ describe('buildDashboard', () => {
     expect(row.creditedAttended).toBe(2);
     expect(row.conducted).toBe(3);
   });
+
+  it('previews selected hours before they are saved to a drive', () => {
+    const slots = [
+      slot({ id: 20, courseName: 'Cloud Computing', status: 'P' }),
+      slot({ id: 21, courseName: 'Cloud Computing', status: 'A' }),
+      slot({ id: 22, courseName: 'Cloud Computing', status: 'A' }),
+    ];
+    const drives: Drive[] = [
+      { id: 'd1', company: 'TCS', description: 'Drive', rowIds: [21] },
+    ];
+    const [row] = buildDashboard(slots, creditedIds(drives, [22]));
+
+    expect(row.originalPct).toBe(33.33);
+    expect(row.correctedPct).toBe(100);
+    expect(row.creditedAttended).toBe(3);
+  });
 });
 
 describe('groupAbsentByDate', () => {

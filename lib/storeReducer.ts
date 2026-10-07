@@ -8,6 +8,7 @@ export interface AppState {
   drives: Drive[];
   selection: number[];
   editingDriveId: string | null;
+  newDriveOpen: boolean;
   notice: string | null;
 }
 
@@ -19,6 +20,8 @@ export type Action =
   | { type: 'SELECT_DATE'; date: string }
   | { type: 'SELECT_ALL' }
   | { type: 'CLEAR_SELECTION' }
+  | { type: 'OPEN_NEW_DRIVE' }
+  | { type: 'CLOSE_NEW_DRIVE' }
   | { type: 'ADD_DRIVE'; company: string; description: string }
   | { type: 'UPDATE_DRIVE'; id: string; company: string; description: string }
   | { type: 'DELETE_DRIVE'; id: string }
@@ -37,6 +40,7 @@ export const initialState: AppState = {
   drives: [],
   selection: [],
   editingDriveId: null,
+  newDriveOpen: false,
   notice: null,
 };
 
@@ -77,7 +81,7 @@ function makeId(): string {
 export function appReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'PARSE_START':
-      return { ...state, status: 'parsing', errorMessage: null };
+      return { ...state, status: 'parsing', errorMessage: null, newDriveOpen: false };
 
     case 'PARSE_SUCCESS': {
       const drives = sanitizeDrives(action.restored, action.parsed);
@@ -90,6 +94,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         drives,
         selection: [],
         editingDriveId: null,
+        newDriveOpen: false,
         errorMessage: null,
         notice: n > 0 ? `Restored ${n} saved drive${n === 1 ? '' : 's'}.` : null,
       };
@@ -102,6 +107,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         errorMessage: action.message,
         parsed: null,
         fingerprint: null,
+        newDriveOpen: false,
       };
 
     case 'TOGGLE_SELECT': {
@@ -131,6 +137,13 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'CLEAR_SELECTION':
       return { ...state, selection: [] };
 
+    case 'OPEN_NEW_DRIVE':
+      if (state.selection.length === 0 || state.editingDriveId) return state;
+      return { ...state, newDriveOpen: true };
+
+    case 'CLOSE_NEW_DRIVE':
+      return { ...state, newDriveOpen: false };
+
     case 'ADD_DRIVE': {
       const company = action.company.trim();
       const description = action.description.trim();
@@ -146,6 +159,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         drives: [...released, drive],
         selection: [],
         editingDriveId: null,
+        newDriveOpen: false,
         notice: `Tagged ${rowIds.length} hour${rowIds.length === 1 ? '' : 's'} for ${company}.`,
       };
     }
@@ -172,6 +186,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         drives,
         selection: [],
         editingDriveId: null,
+        newDriveOpen: false,
         notice: `Drive updated (${rowIds.length} hour${rowIds.length === 1 ? '' : 's'}).`,
       };
     }
@@ -191,11 +206,16 @@ export function appReducer(state: AppState, action: Action): AppState {
     case 'START_EDIT': {
       const drive = state.drives.find((d) => d.id === action.id);
       if (!drive) return state;
-      return { ...state, editingDriveId: drive.id, selection: [...drive.rowIds] };
+      return {
+        ...state,
+        editingDriveId: drive.id,
+        newDriveOpen: false,
+        selection: [...drive.rowIds],
+      };
     }
 
     case 'CANCEL_EDIT':
-      return { ...state, editingDriveId: null, selection: [] };
+      return { ...state, editingDriveId: null, newDriveOpen: false, selection: [] };
 
     case 'SET_DRIVES': {
       const drives = sanitizeDrives(action.drives, state.parsed);
@@ -204,6 +224,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         drives,
         selection: [],
         editingDriveId: null,
+        newDriveOpen: false,
         notice: `Imported ${drives.length} drive${drives.length === 1 ? '' : 's'}.`,
       };
     }

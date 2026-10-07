@@ -104,6 +104,30 @@ describe('appReducer', () => {
     expect(state.selection.sort((a, b) => a - b)).toEqual([2, 3]);
   });
 
+  it('OPEN_NEW_DRIVE requires selected hours and CLOSE_NEW_DRIVE preserves them', () => {
+    let state = readyState();
+    const unopened = appReducer(state, { type: 'OPEN_NEW_DRIVE' });
+    expect(unopened).toMatchObject({ newDriveOpen: false, selection: [] });
+
+    state = appReducer(state, { type: 'TOGGLE_SELECT', id: 2 });
+    state = appReducer(state, { type: 'OPEN_NEW_DRIVE' });
+    expect(state).toMatchObject({ newDriveOpen: true, selection: [2] });
+
+    state = appReducer(state, { type: 'CLOSE_NEW_DRIVE' });
+    expect(state).toMatchObject({ newDriveOpen: false, selection: [2] });
+  });
+
+  it('ADD_DRIVE closes the new-drive form after assigning selected hours', () => {
+    let state = readyState();
+    state = appReducer(state, { type: 'TOGGLE_SELECT', id: 2 });
+    state = { ...state, newDriveOpen: true };
+    state = appReducer(state, { type: 'ADD_DRIVE', company: 'TCS', description: '' });
+
+    expect(state.newDriveOpen).toBe(false);
+    expect(state.selection).toEqual([]);
+    expect(state.drives[0].rowIds).toEqual([2]);
+  });
+
   it('ADD_DRIVE refuses empty selection or blank company', () => {
     const state = readyState();
     expect(appReducer(state, { type: 'ADD_DRIVE', company: '', description: 'd' })).toBe(state);

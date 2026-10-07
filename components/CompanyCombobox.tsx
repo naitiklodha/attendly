@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from 'lucide-react';
+import { filterCompanySuggestions } from '@/lib/companies';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
@@ -20,18 +21,15 @@ type Props = {
   id?: string;
 };
 
-const MAX_SUGGESTIONS = 8;
-
 export default function CompanyCombobox({ value, onChange, options, placeholder, id }: Props) {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const suggestions = useMemo(
+    () => filterCompanySuggestions(options, value),
+    [options, value],
+  );
   const query = value.trim().toLowerCase();
-
-  const suggestions = useMemo(() => {
-    const source = query ? options.filter((o) => o.toLowerCase().includes(query)) : options;
-    return source.filter((o) => o.toLowerCase() !== query).slice(0, MAX_SUGGESTIONS);
-  }, [options, query]);
 
   const freeText = query.length > 0 && !options.some((o) => o.toLowerCase() === query);
 

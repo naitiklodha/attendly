@@ -8,7 +8,7 @@ import { useApp } from '@/lib/store';
 export default function SubjectSummary() {
   const { state } = useApp();
   if (!state.parsed) return null;
-  const rows = buildDashboard(state.parsed.slots, creditedIds(state.drives));
+  const rows = buildDashboard(state.parsed.slots, creditedIds(state.drives, state.selection));
 
   return (
     <section className="panel overflow-hidden">
@@ -42,18 +42,16 @@ export default function SubjectSummary() {
               )}
 
               <span
-                className={`w-[4.5rem] shrink-0 text-right font-mono text-[15px] font-medium tabular-nums ${
-                  onTrack ? 'text-ink' : 'text-[#e06c75]'
-                }`}
+                className={`w-[4.5rem] shrink-0 text-right font-mono text-[15px] font-medium tabular-nums ${onTrack ? 'text-ink' : 'text-[#e06c75]'
+                  }`}
               >
                 {formatPercent(row.correctedPct)}
               </span>
 
               <span className="relative hidden h-1.5 w-24 shrink-0 rounded-full bg-surface-3 md:block">
                 <span
-                  className={`absolute inset-y-0 left-0 rounded-full ${
-                    onTrack ? 'bg-success' : 'bg-[#e06c75]'
-                  }`}
+                  className={`absolute inset-y-0 left-0 rounded-full ${onTrack ? 'bg-success' : 'bg-[#e06c75]'
+                    }`}
                   style={{ width: `${Math.min(row.correctedPct, 100)}%` }}
                 />
                 <span
