@@ -1143,7 +1143,7 @@ export function groupAbsentByDate(slots: HourSlot[]): DateGroup[] {
 npx vitest run tests/calculate.test.ts
 ```
 
-Expected: PASS, 12 tests — including the fixture regression asserting 94.12 / 97.06 / 80.77 / 81.25 / 64.71 and the all-credited 100% case.
+Expected: PASS, 11 tests — including the fixture regression asserting 94.12 / 97.06 / 80.77 / 81.25 / 64.71 and the all-credited 100% case.
 
 - [ ] **Step 5: Run the full suite to catch cross-module breakage**
 
