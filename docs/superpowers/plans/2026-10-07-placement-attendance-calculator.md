@@ -906,8 +906,27 @@ describe('summarize', () => {
     expect(summary.conducted).toBe(42);
     expect(summary.attended).toBe(32);
     expect(summary.lines).toHaveLength(2);
-    expect(summary.lines[0]).toMatchObject({ lectureType: 'PRAC', conducted: 24, attended: 20 });
+    expect(summary.lines[0]).toMatchObject({
+      courseName: 'DEEP LEARNING',
+      courseRaw: 'DEEP LEARNINGP1',
+      division: 'BTI COMP B',
+      lectureType: 'PRAC',
+      conducted: 24,
+      attended: 20,
+    });
     expect(summary.lines[1]).toMatchObject({ lectureType: 'THEO', conducted: 18, attended: 12 });
+  });
+
+  it('merges interleaved lecture types into one line each', () => {
+    const slots = [
+      slot({ courseName: 'Interleave', courseRaw: 'InterleaveP1', lectureType: 'PRAC' }),
+      slot({ courseName: 'Interleave', courseRaw: 'InterleaveT1', lectureType: 'THEO' }),
+      slot({ courseName: 'Interleave', courseRaw: 'InterleaveP1', lectureType: 'PRAC' }),
+    ];
+    const [summary] = summarize(slots, new Set());
+    expect(summary.lines).toHaveLength(2);
+    expect(summary.lines[0]).toMatchObject({ lectureType: 'PRAC', conducted: 2 });
+    expect(summary.lines[1]).toMatchObject({ lectureType: 'THEO', conducted: 1 });
   });
 
   it('credits absent hours marked into a drive', () => {
@@ -1143,7 +1162,7 @@ export function groupAbsentByDate(slots: HourSlot[]): DateGroup[] {
 npx vitest run tests/calculate.test.ts
 ```
 
-Expected: PASS, 11 tests — including the fixture regression asserting 94.12 / 97.06 / 80.77 / 81.25 / 64.71 and the all-credited 100% case.
+Expected: PASS, 12 tests — including the fixture regression asserting 94.12 / 97.06 / 80.77 / 81.25 / 64.71 and the all-credited 100% case.
 
 - [ ] **Step 5: Run the full suite to catch cross-module breakage**
 
