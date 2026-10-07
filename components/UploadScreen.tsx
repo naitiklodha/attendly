@@ -6,7 +6,8 @@ import { motion } from 'framer-motion';
 import { parseAttendance } from '@/lib/parseAttendance';
 import { extractLines } from '@/lib/pdfText';
 import { readFileBytes } from '@/lib/file';
-import { fingerprint, loadDrives } from '@/lib/storage';
+import { mergeAttendanceHistory } from '@/lib/attendanceHistory';
+import { fingerprint, loadStudentHistory } from '@/lib/storage';
 import { useApp } from '@/lib/store';
 import { SAP_PORTAL_LABEL, SAP_PORTAL_URL } from '@/lib/links';
 
@@ -43,8 +44,14 @@ export default function UploadScreen() {
         const fp = await fingerprint(bytes);
         const lines = await extractLines(bytes);
         const parsed = parseAttendance(lines);
-        const restored = loadDrives(fp) ?? [];
-        dispatch({ type: 'PARSE_SUCCESS', parsed, fingerprint: fp, restored });
+        const existing = loadStudentHistory(parsed.header.studentNumber);
+        const history = mergeAttendanceHistory(existing, parsed);
+        dispatch({
+          type: 'PARSE_SUCCESS',
+          parsed: history.parsed,
+          fingerprint: fp,
+          restored: history.drives,
+        });
       } catch (err) {
         dispatch({
           type: 'PARSE_ERROR',
@@ -99,13 +106,12 @@ export default function UploadScreen() {
               if (f) void handleFile(f);
             }}
             onClick={() => !parsing && inputRef.current?.click()}
-            className={`mt-9 cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 text-center transition ${
-              dragging
-                ? 'border-primary bg-primary/10'
-                : parsing
-                  ? 'border-hairline-strong bg-surface-1'
-                  : 'border-hairline bg-surface-1 hover:border-hairline-strong hover:bg-surface-2'
-            }`}
+            className={`mt-9 cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 text-center transition ${dragging
+              ? 'border-primary bg-primary/10'
+              : parsing
+                ? 'border-hairline-strong bg-surface-1'
+                : 'border-hairline bg-surface-1 hover:border-hairline-strong hover:bg-surface-2'
+              }`}
           >
             <input
               ref={inputRef}
@@ -132,8 +138,8 @@ export default function UploadScreen() {
           </motion.div>
 
           <p className="mt-4 text-[13px] leading-relaxed text-ink-tertiary">
-            Parsed in your browser — the file is never uploaded. Your tags are saved locally, keyed
-            to the PDF&rsquo;s SHA-256.
+            Parsed in your browser — the PDF is never uploaded or stored. Attendance history and
+            drive tags are saved locally, keyed to your SAP student number.
           </p>
 
           {state.status === 'error' && state.errorMessage && (

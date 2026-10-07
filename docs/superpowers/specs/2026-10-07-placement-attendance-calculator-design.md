@@ -88,8 +88,10 @@ Dedicated `/report` route, print-optimized A4 CSS → browser "Save as PDF":
   then hours as `Date | Time | Subject | Lecture Type`, plus total excused-hour count.
 
 ### R6 — Persistence
-- Auto-save tags to `localStorage`, keyed by **SHA-256 fingerprint** of the PDF bytes
-  so a different file never inherits stale tags.
+- Auto-save cumulative parsed attendance and drive assignments to `localStorage`, keyed by the
+  student's SAP number. Append unseen hour slots from later PDFs; preserve first-saved data and
+  drive assignments for matching slots. Store no PDF bytes.
+- Keep existing fingerprint-keyed records untouched and do not automatically migrate them.
 - `Export JSON` / `Import JSON` for backup and cross-device transfer.
 
 ### R7 — Non-goals
@@ -104,7 +106,7 @@ Dedicated `/report` route, print-optimized A4 CSS → browser "Save as PDF":
 - Modules:
   - `lib/parseAttendance.ts` — pdfjs text extraction → `HourSlot[]` (pure, unit-tested)
   - `lib/calculate.ts` — status rules + per-course grouping/percentages (pure, unit-tested)
-  - `lib/storage.ts` — fingerprint + localStorage + JSON import/export
+  - `lib/storage.ts` — SAP-number-keyed localStorage history plus fingerprint and JSON helpers
   - `components/*` — upload dropzone, subject cards, absent-hour list, drive form,
     report view
   - `app/report/page.tsx` — print-styled A4 report (sheet replica + annexure)

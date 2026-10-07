@@ -28,8 +28,8 @@ npm run dev        # http://localhost:3000
 
 ## Data & privacy
 
-Everything runs in the browser — no uploads. Tags auto-save in localStorage
-keyed by the PDF's SHA-256, and can be Exported/Imported as JSON.
+Everything runs in the browser — PDFs are parsed locally and never uploaded or stored. Attendance
+history and drive assignments auto-save in localStorage, keyed by SAP student number.
 
 ## Tests
 

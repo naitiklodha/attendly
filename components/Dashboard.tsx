@@ -6,7 +6,7 @@ import DrivesPanel from './DrivesPanel';
 import NoticeToast from './NoticeToast';
 import SubjectSummary from './SubjectSummary';
 import TopBar from './TopBar';
-import { saveDrives } from '@/lib/storage';
+import { saveStudentHistory } from '@/lib/storage';
 import { useApp } from '@/lib/store';
 import { PlusIcon } from 'lucide-react';
 
@@ -14,16 +14,20 @@ export default function Dashboard() {
   const { state, dispatch } = useApp();
 
   useEffect(() => {
-    if (state.status === 'ready' && state.fingerprint) {
-      const saved = saveDrives(state.fingerprint, state.drives);
+    const studentNumber = state.parsed?.header.studentNumber;
+    if (state.status === 'ready' && studentNumber && state.parsed) {
+      const saved = saveStudentHistory(studentNumber, {
+        parsed: state.parsed,
+        drives: state.drives,
+      });
       if (!saved) {
         dispatch({
           type: 'SET_NOTICE',
-          message: 'Storage unavailable — tags will not persist. Use Save tags to keep them.',
+          message: 'Storage unavailable — attendance history will not persist in this browser.',
         });
       }
     }
-  }, [state.status, state.fingerprint, state.drives, dispatch]);
+  }, [state.status, state.parsed, state.drives, dispatch]);
 
   useEffect(() => {
     if (!state.notice) return;

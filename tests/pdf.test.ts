@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extractLines } from '../lib/pdfText';
+import { ensureReadableStreamAsyncIterator, extractLines } from '../lib/pdfText';
 
 const PDF = path.join(process.cwd(), 'ZSVKM_STUDENT_ATTENDANCE_COPY.pdf');
 
@@ -25,5 +25,29 @@ describe.runIf(existsSync(PDF))('extractLines (live sample PDF)', () => {
       .map((l) => Number.parseInt(l, 10))
       .sort((a, b) => a - b);
     expect(ids).toEqual(Array.from({ length: 166 }, (_, i) => i + 1));
+  });
+
+  it('extracts text when ReadableStream lacks async iteration', async () => {
+    const prototype = ReadableStream.prototype;
+    const iteratorDescriptor = Object.getOwnPropertyDescriptor(prototype, Symbol.asyncIterator);
+    Object.defineProperty(prototype, Symbol.asyncIterator, {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      ensureReadableStreamAsyncIterator();
+      const lines = await extractLines(new Uint8Array(readFileSync(PDF)));
+      expect(lines.length).toBeGreaterThan(150);
+    } finally {
+      if (iteratorDescriptor) {
+        Object.defineProperty(prototype, Symbol.asyncIterator, iteratorDescriptor);
+      } else {
+        const asyncIterablePrototype = prototype as ReadableStream<unknown> & {
+          [Symbol.asyncIterator]?: AsyncIterator<unknown>;
+        };
+        delete asyncIterablePrototype[Symbol.asyncIterator];
+      }
+    }
   });
 });

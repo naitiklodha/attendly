@@ -3,8 +3,10 @@ import {
   exportJson,
   fingerprint,
   loadDrives,
+  loadStudentHistory,
   parseImport,
   saveDrives,
+  saveStudentHistory,
   type KeyValueStore,
 } from '../lib/storage';
 import type { Drive, StudentHeader } from '../lib/types';
@@ -63,6 +65,40 @@ describe('saveDrives / loadDrives', () => {
     const store = memoryStore();
     store.setItem('attcalc:v1:abc', JSON.stringify([drives[0], { bogus: 1 }]));
     expect(loadDrives('abc', store)).toEqual(drives);
+  });
+});
+
+describe('saveStudentHistory / loadStudentHistory', () => {
+  const history = {
+    parsed: {
+      header,
+      slots: [],
+      dateRange: { from: '2026-07-13', to: '2026-07-13' },
+    },
+    drives,
+  };
+
+  it('round-trips history independently for each SAP student number', () => {
+    const store = memoryStore();
+    expect(saveStudentHistory(header.studentNumber, history, store)).toBe(true);
+    expect(loadStudentHistory(header.studentNumber, store)).toEqual(history);
+    expect(loadStudentHistory('another-student', store)).toBeNull();
+  });
+
+  it('leaves legacy fingerprint records untouched', () => {
+    const store = memoryStore();
+    const legacy = JSON.stringify(drives);
+    store.setItem('attcalc:v1:old-fingerprint', legacy);
+
+    expect(saveStudentHistory(header.studentNumber, history, store)).toBe(true);
+    expect(store.getItem('attcalc:v1:old-fingerprint')).toBe(legacy);
+  });
+
+  it('ignores malformed student history', () => {
+    const store = memoryStore();
+    store.setItem('attcalc:v2:student:70322100139', '{not json');
+
+    expect(loadStudentHistory(header.studentNumber, store)).toBeNull();
   });
 });
 

@@ -94,8 +94,8 @@ export default function DisclaimerGate() {
             </div>
 
             <div className="mt-6 rounded-md border border-hairline bg-surface-2 px-4 py-3 text-[13px] leading-relaxed text-ink-subtle">
-              Your PDF is parsed inside your browser and is never uploaded. Your tags are stored
-              locally on this device, keyed to the file&rsquo;s SHA-256.
+              Your PDF is parsed in your browser and is never uploaded or stored. Attendance history
+              and drive tags are saved locally on this device, keyed to your SAP student number.
             </div>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">

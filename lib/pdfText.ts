@@ -19,6 +19,37 @@ if (typeof Promise.withResolvers !== 'function') {
   };
 }
 
+export function ensureReadableStreamAsyncIterator(): void {
+  const prototype = ReadableStream.prototype as ReadableStream<unknown> & {
+    [Symbol.asyncIterator]?: () => AsyncIterator<unknown>;
+  };
+  if (
+    typeof ReadableStream === 'undefined' ||
+    typeof prototype[Symbol.asyncIterator] === 'function'
+  ) {
+    return;
+  }
+
+  Object.defineProperty(prototype, Symbol.asyncIterator, {
+    configurable: true,
+    writable: true,
+    value: async function* (this: ReadableStream<unknown>) {
+      const reader = this.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) return;
+          yield value;
+        }
+      } finally {
+        reader.releaseLock();
+      }
+    },
+  });
+}
+
+ensureReadableStreamAsyncIterator();
+
 if (typeof window !== 'undefined') {
   GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 }

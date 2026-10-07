@@ -1,4 +1,5 @@
-import type { Drive, StudentHeader } from './types';
+import type { StudentAttendanceHistory } from './attendanceHistory';
+import type { Drive, HourSlot, ParsedAttendance, StudentHeader } from './types';
 
 export interface KeyValueStore {
   getItem(key: string): string | null;
@@ -7,6 +8,7 @@ export interface KeyValueStore {
 }
 
 const KEY_PREFIX = 'attcalc:v1:';
+const STUDENT_HISTORY_PREFIX = 'attcalc:v2:student:';
 
 export interface ExportPayload {
   version: 1;
@@ -75,6 +77,91 @@ export function loadDrives(
     if (!Array.isArray(parsed)) return null;
     const valid = parsed.filter(isDrive);
     return valid.length > 0 ? valid : [];
+  } catch {
+    return null;
+  }
+}
+
+function isHourSlot(value: unknown): value is HourSlot {
+  if (typeof value !== 'object' || value === null) return false;
+  const slot = value as Record<string, unknown>;
+  return (
+    typeof slot.id === 'number' &&
+    Number.isInteger(slot.id) &&
+    typeof slot.courseRaw === 'string' &&
+    typeof slot.courseName === 'string' &&
+    (slot.typeCode === 'P1' || slot.typeCode === 'T1') &&
+    (slot.lectureType === 'PRAC' || slot.lectureType === 'THEO') &&
+    typeof slot.division === 'string' &&
+    typeof slot.date === 'string' &&
+    typeof slot.start === 'string' &&
+    typeof slot.end === 'string' &&
+    (slot.status === 'P' || slot.status === 'A' || slot.status === 'E' || slot.status === 'L' || slot.status === 'NU')
+  );
+}
+
+function isParsedAttendance(value: unknown): value is ParsedAttendance {
+  if (typeof value !== 'object' || value === null) return false;
+  const parsed = value as Record<string, unknown>;
+  if (typeof parsed.header !== 'object' || parsed.header === null) return false;
+  if (typeof parsed.dateRange !== 'object' || parsed.dateRange === null) return false;
+  const header = parsed.header as Record<string, unknown>;
+  const dateRange = parsed.dateRange as Record<string, unknown>;
+  return (
+    ['studentName', 'studentNumber', 'rollNo', 'academicYear', 'programName'].every(
+      (key) => typeof header[key] === 'string',
+    ) &&
+    Array.isArray(parsed.slots) &&
+    parsed.slots.every(isHourSlot) &&
+    typeof dateRange.from === 'string' &&
+    typeof dateRange.to === 'string'
+  );
+}
+
+function studentHistoryKey(studentNumber: string): string {
+  return STUDENT_HISTORY_PREFIX + studentNumber.trim();
+}
+
+export function saveStudentHistory(
+  studentNumber: string,
+  history: StudentAttendanceHistory,
+  store: KeyValueStore | null = defaultStore(),
+): boolean {
+  const normalizedStudentNumber = studentNumber.trim();
+  if (!store || !normalizedStudentNumber) return false;
+  try {
+    store.setItem(
+      studentHistoryKey(normalizedStudentNumber),
+      JSON.stringify({ version: 2, ...history }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function loadStudentHistory(
+  studentNumber: string,
+  store: KeyValueStore | null = defaultStore(),
+): StudentAttendanceHistory | null {
+  const normalizedStudentNumber = studentNumber.trim();
+  if (!store || !normalizedStudentNumber) return null;
+  try {
+    const raw = store.getItem(studentHistoryKey(normalizedStudentNumber));
+    if (!raw) return null;
+    const record: unknown = JSON.parse(raw);
+    if (typeof record !== 'object' || record === null) return null;
+    const value = record as Record<string, unknown>;
+    if (
+      value.version !== 2 ||
+      !isParsedAttendance(value.parsed) ||
+      value.parsed.header.studentNumber.trim() !== normalizedStudentNumber ||
+      !Array.isArray(value.drives) ||
+      !value.drives.every(isDrive)
+    ) {
+      return null;
+    }
+    return { parsed: value.parsed, drives: value.drives };
   } catch {
     return null;
   }
