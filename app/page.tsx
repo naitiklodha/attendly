@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import HeroArt from '@/components/landing/HeroArt';
 import Reveal from '@/components/landing/Reveal';
+import { SAP_PORTAL_LABEL, SAP_PORTAL_URL } from '@/lib/links';
 
 const RITUAL = [
   'Open the PDF.',
@@ -21,8 +22,23 @@ const RAPID = [
 const STEPS = [
   {
     n: '01',
-    title: 'Drop your hour-wise SAP export',
-    body: 'Upload the attendance PDF your college gives you. The calculator reads the hour-wise records across theory, practical, tutorial and studio classes.',
+    title: 'Get the hour-wise Detailed Report',
+    body: (
+      <>
+        Pull your attendance PDF from the{' '}
+        <a
+          href={SAP_PORTAL_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary-hover"
+        >
+          {SAP_PORTAL_LABEL}
+        </a>
+        {' '}(<span className="font-mono text-[13px] text-ink-subtle">sdc-sppap1.svkm.ac.in:50001/irj/portal</span>) — open your attendance and choose{' '}
+        <span className="font-medium text-ink">Detailed Report</span>. Then drop it here; theory,
+        practical, tutorial and studio slots are all read.
+      </>
+    ),
     icon: (
       <path d="M12 3v10m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
     ),

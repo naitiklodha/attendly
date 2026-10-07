@@ -7,11 +7,23 @@ import { parseAttendance } from '@/lib/parseAttendance';
 import { extractLines } from '@/lib/pdfText';
 import { fingerprint, loadDrives } from '@/lib/storage';
 import { useApp } from '@/lib/store';
+import { SAP_PORTAL_LABEL, SAP_PORTAL_URL } from '@/lib/links';
 
 const STEPS = [
-  'Drop the hour-wise SAP export.',
-  'Tick the hours missed for a drive; name the company.',
-  'Check corrected %, then print the sheet-format report.',
+  <>
+    Get the hour-wise PDF from the{' '}
+    <a
+      href={SAP_PORTAL_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary underline decoration-primary/40 underline-offset-2 transition hover:text-primary-hover"
+    >
+      {SAP_PORTAL_LABEL}
+    </a>
+    , choosing <span className="font-medium text-ink">Detailed Report</span>.
+  </>,
+  <>Tick the hours missed for a drive; name the company.</>,
+  <>Check corrected %, then print the sheet-format report.</>,
 ];
 
 export default function UploadScreen() {
@@ -139,7 +151,7 @@ export default function UploadScreen() {
             <p className="t-eyebrow text-ink-tertiary">How it works</p>
             <ol className="mt-4 space-y-3">
               {STEPS.map((step, i) => (
-                <li key={step} className="flex gap-3">
+                <li key={i} className="flex gap-3">
                   <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-hairline-strong bg-surface-2 font-mono text-[11px] text-primary">
                     {i + 1}
                   </span>
