@@ -2936,6 +2936,14 @@ npm test
 
 Expected: all suites pass — format, pdf, parseAttendance, calculate, storage, storeReducer.
 
+Then guard against fixture drift (regenerating must be a no-op; if `pdfText` changed but the fixture wasn't refreshed, tests could be green against stale lines):
+
+```bash
+npm run fixture && git diff --exit-code tests/fixtures/attendance-lines.json
+```
+
+Expected: no diff.
+
 - [ ] **Step 2: Typecheck + lint + production build**
 
 ```bash
