@@ -3,14 +3,23 @@ const SHEET_CACHE_KEY = 'attcalc:v1:companies:sheet';
 const MAX_REMEMBERED = 300;
 
 export const DEFAULT_COMPANIES = [
+  'Accenture',
+  'BNP Paribas',
   'byteeIT',
   'Capgemini',
+  'CleverTap',
+  'Drishti Group',
+  'Edra Labs',
+  'HPe',
+  'Iron Mountain',
   'Jio Games',
   'KVAT & Co',
   'Lxme',
+  'Maharashtra State Innovation Society',
   'Marsh',
   'Morgan Stanley',
   'Quantiphi',
+  'TATA Trent Limited',
 ];
 
 export const SHEET_URL = process.env.NEXT_PUBLIC_COMPANY_SHEET_URL ?? '';
