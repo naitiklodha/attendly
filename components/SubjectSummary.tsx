@@ -5,18 +5,28 @@ import { motion } from 'framer-motion';
 import { LayersIcon } from 'lucide-react';
 import { buildDashboard, creditedIds } from '@/lib/calculate';
 import { formatPercent } from '@/lib/format';
+import { suggestMergeGroups } from '@/lib/subjectMerge';
 import { useApp } from '@/lib/store';
 import MergeSubjectsDialog from './MergeSubjectsDialog';
 
 export default function SubjectSummary() {
-  const { state } = useApp();
+  const { state, dispatch } = useApp();
   const [merging, setMerging] = useState(false);
+  const [dismissed, setDismissed] = useState<string[]>([]);
   if (!state.parsed) return null;
   const rows = buildDashboard(
     state.parsed.slots,
     creditedIds(state.drives, state.selection),
     state.courseMerges,
   );
+  const suggestions = suggestMergeGroups(rows.map((row) => row.courseName)).filter(
+    (group) => !dismissed.includes(group.join('|')),
+  );
+
+  const dismissSuggestion = (group: string[]) => {
+    const key = group.join('|');
+    setDismissed((current) => (current.includes(key) ? current : [...current, key]));
+  };
 
   return (
     <section className="panel overflow-hidden">
@@ -34,6 +44,41 @@ export default function SubjectSummary() {
           Merge subjects
         </button>
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="border-b border-hairline bg-surface-2 px-5 py-3.5">
+          <p className="t-eyebrow text-primary">Looks like the same subject</p>
+          <ul className="mt-2.5 space-y-2.5">
+            {suggestions.map((group) => (
+              <li
+                key={group.join('|')}
+                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
+              >
+                <span className="min-w-0 text-[13px] leading-relaxed text-ink-muted">
+                  {group.join('  ·  ')}
+                </span>
+                <span className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'MERGE_COURSES', names: group })}
+                    className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-[13px] font-medium text-canvas transition hover:bg-primary-hover"
+                  >
+                    <LayersIcon aria-hidden="true" className="size-3.5" />
+                    Merge
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dismissSuggestion(group)}
+                    className="btn-ghost"
+                  >
+                    Not now
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <ul className="divide-y divide-hairline">
         {rows.map((row, i) => {
