@@ -1,20 +1,38 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { LayersIcon } from 'lucide-react';
 import { buildDashboard, creditedIds } from '@/lib/calculate';
 import { formatPercent } from '@/lib/format';
 import { useApp } from '@/lib/store';
+import MergeSubjectsDialog from './MergeSubjectsDialog';
 
 export default function SubjectSummary() {
   const { state } = useApp();
+  const [merging, setMerging] = useState(false);
   if (!state.parsed) return null;
-  const rows = buildDashboard(state.parsed.slots, creditedIds(state.drives, state.selection));
+  const rows = buildDashboard(
+    state.parsed.slots,
+    creditedIds(state.drives, state.selection),
+    state.courseMerges,
+  );
 
   return (
     <section className="panel overflow-hidden">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-hairline px-5 py-3.5">
-        <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">Course attendance</h2>
-        <p className="font-mono text-[12px] text-ink-tertiary">original → after placement credit</p>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-hairline px-5 py-3">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2 className="text-[14px] font-semibold tracking-[-0.2px] text-ink">Course attendance</h2>
+          <p className="font-mono text-[12px] text-ink-tertiary">original → after placement credit</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMerging(true)}
+          className="btn-ghost -my-1 gap-1.5 px-2.5 py-1.5 text-[13px]"
+        >
+          <LayersIcon aria-hidden="true" className="size-3.5" />
+          Merge subjects
+        </button>
       </div>
 
       <ul className="divide-y divide-hairline">
@@ -71,6 +89,12 @@ export default function SubjectSummary() {
           );
         })}
       </ul>
+
+      <MergeSubjectsDialog
+        open={merging}
+        onOpenChange={setMerging}
+        subjects={rows.map((row) => row.courseName)}
+      />
     </section>
   );
 }

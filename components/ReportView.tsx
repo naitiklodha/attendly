@@ -44,7 +44,11 @@ export default function ReportView() {
   const { state } = useApp();
   if (!state.parsed) return null;
   const { header, dateRange } = state.parsed;
-  const summaries = summarize(state.parsed.slots, creditedIds(state.drives));
+  const summaries = summarize(
+    state.parsed.slots,
+    creditedIds(state.drives),
+    state.courseMerges,
+  );
 
   const rows: Row[] = [];
   for (const summary of summaries) {
@@ -175,7 +179,9 @@ export default function ReportView() {
                     <tr key={hour.id}>
                       <td className={td}>{formatDayLabel(hour.date)}</td>
                       <td className={td}>{formatTimeRange(hour.start, hour.end)}</td>
-                      <td className={td}>{hour.courseName}</td>
+                      <td className={td}>
+                        {state.courseMerges[hour.courseName] ?? hour.courseName}
+                      </td>
                       <td className={td}>{hour.lectureType}</td>
                     </tr>
                   ))}

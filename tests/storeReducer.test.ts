@@ -239,6 +239,57 @@ describe('appReducer', () => {
     expect(state.drives[1].rowIds).toEqual([3]);
   });
 
+  it('MERGE_COURSES groups subjects under the longest name', () => {
+    const state = appReducer(readyState(), {
+      type: 'MERGE_COURSES',
+      names: ['Sample', 'Sample Course'],
+    });
+    expect(state.courseMerges).toEqual({
+      Sample: 'Sample Course',
+      'Sample Course': 'Sample Course',
+    });
+    expect(state.notice).toContain('Sample Course');
+  });
+
+  it('UNMERGE_GROUP splits a merged subject again', () => {
+    let state = appReducer(readyState(), {
+      type: 'MERGE_COURSES',
+      names: ['Sample', 'Sample Course'],
+    });
+    state = appReducer(state, { type: 'UNMERGE_GROUP', display: 'Sample Course' });
+    expect(state.courseMerges).toEqual({});
+    expect(state.notice).toContain('Sample Course');
+  });
+
+  it('PARSE_SUCCESS restores merges and drops ones missing from this PDF', () => {
+    const base = readyState().parsed!;
+    const parsed: ParsedAttendance = {
+      ...base,
+      slots: [...base.slots, { ...slot(5, 'P'), courseName: 'Sample', courseRaw: 'SampleP1' }],
+    };
+
+    const kept = appReducer(initialState, {
+      type: 'PARSE_SUCCESS',
+      parsed,
+      fingerprint: 'fp',
+      restored: [],
+      restoredMerges: { Sample: 'Sample Course', 'Sample Course': 'Sample Course' },
+    });
+    expect(kept.courseMerges).toEqual({
+      Sample: 'Sample Course',
+      'Sample Course': 'Sample Course',
+    });
+
+    const dropped = appReducer(initialState, {
+      type: 'PARSE_SUCCESS',
+      parsed,
+      fingerprint: 'fp',
+      restored: [],
+      restoredMerges: { Ghost: 'Ghost Course', 'Ghost Course': 'Ghost Course' },
+    });
+    expect(dropped.courseMerges).toEqual({});
+  });
+
   it('RESET returns to initial state', () => {
     const state = appReducer(readyState(), { type: 'RESET' });
     expect(state).toEqual(initialState);

@@ -144,6 +144,68 @@ describe('buildDashboard', () => {
   });
 });
 
+describe('summarize with subject merges', () => {
+  const merges = {
+    'Natural Language Procsg': 'Natural Language Processing',
+    'Natural Language Processing': 'Natural Language Processing',
+  };
+
+  function nlpSlots(): HourSlot[] {
+    return [
+      slot({
+        id: 501,
+        courseName: 'Natural Language Procsg',
+        courseRaw: 'Natural Language ProcsgP1',
+        lectureType: 'PRAC',
+        status: 'P',
+      }),
+      slot({
+        id: 502,
+        courseName: 'Natural Language Processing',
+        courseRaw: 'Natural Language ProcessingT1',
+        typeCode: 'T1',
+        lectureType: 'THEO',
+        status: 'A',
+      }),
+    ];
+  }
+
+  it('keeps the two spellings apart when no merge is given', () => {
+    const summaries = summarize(nlpSlots(), new Set());
+    expect(summaries.map((s) => s.courseName)).toEqual([
+      'Natural Language Procsg',
+      'Natural Language Processing',
+    ]);
+  });
+
+  it('combines them into one row under the longest name', () => {
+    const [summary] = summarize(nlpSlots(), new Set(), merges);
+    expect(summary.courseName).toBe('Natural Language Processing');
+    expect(summary.conducted).toBe(2);
+    expect(summary.attended).toBe(1);
+    expect(summary.percentage).toBe(50);
+    expect(summary.lines).toHaveLength(2);
+    expect(summary.lines[0]).toMatchObject({
+      courseName: 'NATURAL LANGUAGE PROCESSING',
+      courseRaw: 'NATURAL LANGUAGE PROCESSINGP1',
+      lectureType: 'PRAC',
+      conducted: 1,
+      attended: 1,
+    });
+  });
+
+  it('feeds the merged row into the dashboard', () => {
+    const rows = buildDashboard(nlpSlots(), new Set(), merges);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      courseName: 'Natural Language Processing',
+      conducted: 2,
+      originalAttended: 1,
+      creditedAttended: 1,
+    });
+  });
+});
+
 describe('groupAbsentByDate', () => {
   it('groups only A slots, sorted by date', () => {
     const slots = [

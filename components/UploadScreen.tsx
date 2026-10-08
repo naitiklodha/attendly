@@ -51,6 +51,7 @@ export default function UploadScreen() {
           parsed: history.parsed,
           fingerprint: fp,
           restored: history.drives,
+          restoredMerges: history.merges ?? {},
         });
       } catch (err) {
         dispatch({

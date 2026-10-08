@@ -6,6 +6,7 @@ import type {
   Drive,
   HourSlot,
 } from './types';
+import type { CourseMerges } from './subjectMerge';
 
 export function pct(attended: number, conducted: number): number {
   if (conducted === 0) return 0;
@@ -31,6 +32,7 @@ function isPresent(slot: HourSlot, credited: ReadonlySet<number>): boolean {
 export function summarize(
   slots: HourSlot[],
   credited: ReadonlySet<number>,
+  merges: CourseMerges = {},
 ): CourseSummary[] {
   const order: string[] = [];
   const byCourse = new Map<
@@ -45,19 +47,20 @@ export function summarize(
 
   for (const slot of slots) {
     if (!isCounted(slot.status)) continue;
-    let course = byCourse.get(slot.courseName);
+    const key = merges[slot.courseName] ?? slot.courseName;
+    let course = byCourse.get(key);
     if (!course) {
       course = { lines: [], lineIndex: new Map(), conducted: 0, attended: 0 };
-      byCourse.set(slot.courseName, course);
-      order.push(slot.courseName);
+      byCourse.set(key, course);
+      order.push(key);
     }
     let idx = course.lineIndex.get(slot.lectureType);
     if (idx === undefined) {
       idx = course.lines.length;
       course.lineIndex.set(slot.lectureType, idx);
       course.lines.push({
-        courseName: slot.courseName.toUpperCase(),
-        courseRaw: slot.courseRaw.toUpperCase(),
+        courseName: key.toUpperCase(),
+        courseRaw: displayCourseRaw(slot, key),
         division: slot.division.toUpperCase(),
         lectureType: slot.lectureType,
         conducted: 0,
@@ -85,12 +88,18 @@ export function summarize(
   });
 }
 
+function displayCourseRaw(slot: HourSlot, display: string): string {
+  const suffix = slot.courseRaw.slice(slot.courseName.length);
+  return (display + suffix).toUpperCase();
+}
+
 export function buildDashboard(
   slots: HourSlot[],
   credited: ReadonlySet<number>,
+  merges: CourseMerges = {},
 ): DashboardRow[] {
-  const original = summarize(slots, new Set());
-  const corrected = summarize(slots, credited);
+  const original = summarize(slots, new Set(), merges);
+  const corrected = summarize(slots, credited, merges);
   const originalByCourse = new Map(original.map((s) => [s.courseName, s]));
   return corrected.map((s) => {
     const before = originalByCourse.get(s.courseName);

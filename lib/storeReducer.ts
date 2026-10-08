@@ -1,3 +1,5 @@
+import type { CourseMerges } from './subjectMerge';
+import { mergeCourseNames, sanitizeCourseMerges, unmergeCourseGroup } from './subjectMerge';
 import type { Drive, ParsedAttendance } from './types';
 
 export interface AppState {
@@ -6,6 +8,7 @@ export interface AppState {
   fingerprint: string | null;
   parsed: ParsedAttendance | null;
   drives: Drive[];
+  courseMerges: CourseMerges;
   selection: number[];
   editingDriveId: string | null;
   newDriveOpen: boolean;
@@ -14,7 +17,13 @@ export interface AppState {
 
 export type Action =
   | { type: 'PARSE_START' }
-  | { type: 'PARSE_SUCCESS'; parsed: ParsedAttendance; fingerprint: string; restored: Drive[] }
+  | {
+      type: 'PARSE_SUCCESS';
+      parsed: ParsedAttendance;
+      fingerprint: string;
+      restored: Drive[];
+      restoredMerges?: CourseMerges;
+    }
   | { type: 'PARSE_ERROR'; message: string }
   | { type: 'TOGGLE_SELECT'; id: number }
   | { type: 'SELECT_DATE'; date: string }
@@ -28,6 +37,8 @@ export type Action =
   | { type: 'START_EDIT'; id: string }
   | { type: 'CANCEL_EDIT' }
   | { type: 'SET_DRIVES'; drives: Drive[] }
+  | { type: 'MERGE_COURSES'; names: string[] }
+  | { type: 'UNMERGE_GROUP'; display: string }
   | { type: 'SET_NOTICE'; message: string }
   | { type: 'CLEAR_NOTICE' }
   | { type: 'RESET' };
@@ -38,6 +49,7 @@ export const initialState: AppState = {
   fingerprint: null,
   parsed: null,
   drives: [],
+  courseMerges: {},
   selection: [],
   editingDriveId: null,
   newDriveOpen: false,
@@ -46,6 +58,10 @@ export const initialState: AppState = {
 
 function taggableIds(parsed: ParsedAttendance | null): Set<number> {
   return new Set((parsed?.slots ?? []).filter((s) => s.status === 'A').map((s) => s.id));
+}
+
+function availableCourseNames(parsed: ParsedAttendance | null): string[] {
+  return [...new Set((parsed?.slots ?? []).map((slot) => slot.courseName))];
 }
 
 function sanitizeDrives(drives: Drive[], parsed: ParsedAttendance | null): Drive[] {
@@ -85,6 +101,10 @@ export function appReducer(state: AppState, action: Action): AppState {
 
     case 'PARSE_SUCCESS': {
       const drives = sanitizeDrives(action.restored, action.parsed);
+      const courseMerges = sanitizeCourseMerges(
+        action.restoredMerges ?? {},
+        availableCourseNames(action.parsed),
+      );
       const n = drives.length;
       return {
         ...state,
@@ -92,6 +112,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         parsed: action.parsed,
         fingerprint: action.fingerprint,
         drives,
+        courseMerges,
         selection: [],
         editingDriveId: null,
         newDriveOpen: false,
@@ -107,6 +128,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         errorMessage: action.message,
         parsed: null,
         fingerprint: null,
+        courseMerges: {},
         newDriveOpen: false,
       };
 
@@ -226,6 +248,25 @@ export function appReducer(state: AppState, action: Action): AppState {
         editingDriveId: null,
         newDriveOpen: false,
         notice: `Imported ${drives.length} drive${drives.length === 1 ? '' : 's'}.`,
+      };
+    }
+
+    case 'MERGE_COURSES': {
+      const next = mergeCourseNames(state.courseMerges, action.names);
+      const display = next[action.names[0]] ?? action.names[0];
+      return {
+        ...state,
+        courseMerges: next,
+        notice: `Grouped subjects as ${display}.`,
+      };
+    }
+
+    case 'UNMERGE_GROUP': {
+      const next = unmergeCourseGroup(state.courseMerges, action.display);
+      return {
+        ...state,
+        courseMerges: next,
+        notice: `Split ${action.display} back into separate subjects.`,
       };
     }
 

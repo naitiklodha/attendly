@@ -1,9 +1,11 @@
+import type { CourseMerges } from './subjectMerge';
 import type { Drive, ParsedAttendance } from './types';
 import type { HourSlot } from './types';
 
 export interface StudentAttendanceHistory {
     parsed: ParsedAttendance;
     drives: Drive[];
+    merges?: CourseMerges;
 }
 
 function slotIdentity(slot: HourSlot): string {
@@ -20,7 +22,7 @@ export function mergeAttendanceHistory(
     existing: StudentAttendanceHistory | null,
     incoming: ParsedAttendance,
 ): StudentAttendanceHistory {
-    if (!existing) return { parsed: incoming, drives: [] };
+    if (!existing) return { parsed: incoming, drives: [], merges: {} };
 
     const slots = [...existing.parsed.slots];
     const identities = new Set(slots.map(slotIdentity));
@@ -45,5 +47,6 @@ export function mergeAttendanceHistory(
             },
         },
         drives: existing.drives,
+        merges: existing.merges ?? {},
     };
 }

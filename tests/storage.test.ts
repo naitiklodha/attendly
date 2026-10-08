@@ -76,6 +76,7 @@ describe('saveStudentHistory / loadStudentHistory', () => {
       dateRange: { from: '2026-01-12', to: '2026-01-12' },
     },
     drives,
+    merges: {},
   };
 
   it('round-trips history independently for each SAP student number', () => {
@@ -83,6 +84,13 @@ describe('saveStudentHistory / loadStudentHistory', () => {
     expect(saveStudentHistory(header.studentNumber, history, store)).toBe(true);
     expect(loadStudentHistory(header.studentNumber, store)).toEqual(history);
     expect(loadStudentHistory('another-student', store)).toBeNull();
+  });
+
+  it('round-trips subject merges with the history', () => {
+    const store = memoryStore();
+    const withMerges = { ...history, merges: { Sample: 'Sample Course' } };
+    expect(saveStudentHistory(header.studentNumber, withMerges, store)).toBe(true);
+    expect(loadStudentHistory(header.studentNumber, store)).toEqual(withMerges);
   });
 
   it('leaves legacy fingerprint records untouched', () => {
@@ -106,7 +114,7 @@ describe('exportJson / parseImport', () => {
   it('round-trips a valid export', () => {
     const json = exportJson('fp123', header, drives);
     const result = parseImport(json, 'fp123');
-    expect(result).toEqual({ ok: true, drives });
+    expect(result).toEqual({ ok: true, drives, merges: {} });
   });
   it('rejects invalid JSON', () => {
     const result = parseImport('{oops', 'fp123');
@@ -128,7 +136,12 @@ describe('exportJson / parseImport', () => {
   });
   it('accepts files without a fingerprint field', () => {
     const result = parseImport(JSON.stringify({ drives }), 'fp123');
-    expect(result).toEqual({ ok: true, drives });
+    expect(result).toEqual({ ok: true, drives, merges: {} });
+  });
+  it('carries subject merges through the export', () => {
+    const merges = { 'NLP Procsg': 'Natural Language Processing' };
+    const result = parseImport(exportJson('fp123', header, drives, merges), 'fp123');
+    expect(result).toEqual({ ok: true, drives, merges });
   });
   it('flags a fingerprint mismatch', () => {
     const json = exportJson('other-fp', header, drives);

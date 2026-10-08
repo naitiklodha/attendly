@@ -1,4 +1,5 @@
 import type { StudentAttendanceHistory } from './attendanceHistory';
+import type { CourseMerges } from './subjectMerge';
 import type { Drive, HourSlot, ParsedAttendance, StudentHeader } from './types';
 
 export interface KeyValueStore {
@@ -17,6 +18,7 @@ export interface ExportPayload {
   studentNumber: string;
   exportedAt: string;
   drives: Drive[];
+  merges?: CourseMerges;
 }
 
 export async function fingerprint(bytes: Uint8Array): Promise<string> {
@@ -48,6 +50,13 @@ export function isDrive(value: unknown): value is Drive {
     typeof d.description === 'string' &&
     Array.isArray(d.rowIds) &&
     d.rowIds.every((n) => typeof n === 'number' && Number.isInteger(n))
+  );
+}
+
+export function isCourseMerges(value: unknown): value is CourseMerges {
+  if (typeof value !== 'object' || value === null) return false;
+  return Object.values(value as Record<string, unknown>).every(
+    (entry) => typeof entry === 'string' && entry.length > 0,
   );
 }
 
@@ -161,13 +170,22 @@ export function loadStudentHistory(
     ) {
       return null;
     }
-    return { parsed: value.parsed, drives: value.drives };
+    return {
+      parsed: value.parsed,
+      drives: value.drives,
+      merges: isCourseMerges(value.merges) ? value.merges : {},
+    };
   } catch {
     return null;
   }
 }
 
-export function exportJson(fp: string, header: StudentHeader, drives: Drive[]): string {
+export function exportJson(
+  fp: string,
+  header: StudentHeader,
+  drives: Drive[],
+  merges: CourseMerges = {},
+): string {
   const payload: ExportPayload = {
     version: 1,
     fingerprint: fp,
@@ -175,13 +193,21 @@ export function exportJson(fp: string, header: StudentHeader, drives: Drive[]): 
     studentNumber: header.studentNumber,
     exportedAt: new Date().toISOString(),
     drives,
+    merges,
   };
   return JSON.stringify(payload, null, 2);
 }
 
 export type ImportResult =
-  | { ok: true; drives: Drive[] }
-  | { ok: false; reason: 'fingerprint'; error: string; fingerprint: string; drives: Drive[] }
+  | { ok: true; drives: Drive[]; merges: CourseMerges }
+  | {
+      ok: false;
+      reason: 'fingerprint';
+      error: string;
+      fingerprint: string;
+      drives: Drive[];
+      merges: CourseMerges;
+    }
   | { ok: false; reason: 'invalid-json' | 'invalid-shape'; error: string };
 
 export function parseImport(json: string, currentFingerprint: string | null): ImportResult {
@@ -213,6 +239,7 @@ export function parseImport(json: string, currentFingerprint: string | null): Im
     };
   }
   const fp = typeof p.fingerprint === 'string' ? p.fingerprint : null;
+  const merges = isCourseMerges(p.merges) ? p.merges : {};
   if (currentFingerprint && fp && fp !== currentFingerprint) {
     return {
       ok: false,
@@ -220,7 +247,8 @@ export function parseImport(json: string, currentFingerprint: string | null): Im
       error: 'This file was saved for a different attendance PDF.',
       fingerprint: fp,
       drives: p.drives as Drive[],
+      merges,
     };
   }
-  return { ok: true, drives: p.drives as Drive[] };
+  return { ok: true, drives: p.drives as Drive[], merges };
 }

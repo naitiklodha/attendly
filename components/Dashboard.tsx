@@ -19,6 +19,7 @@ export default function Dashboard() {
       const saved = saveStudentHistory(studentNumber, {
         parsed: state.parsed,
         drives: state.drives,
+        merges: state.courseMerges,
       });
       if (!saved) {
         dispatch({
@@ -27,7 +28,7 @@ export default function Dashboard() {
         });
       }
     }
-  }, [state.status, state.parsed, state.drives, dispatch]);
+  }, [state.status, state.parsed, state.drives, state.courseMerges, dispatch]);
 
   useEffect(() => {
     if (!state.notice) return;
