@@ -30,10 +30,24 @@ describe('splitCourse', () => {
       division: 'BTI Comp A+B',
     });
   });
+  it('splits courses from other streams without a BTI marker', () => {
+    expect(splitCourse('Marketing ManagementP1 MBA Marketing B')).toEqual({
+      courseName: 'Marketing Management',
+      typeCode: 'P1',
+      lectureType: 'PRAC',
+      division: 'MBA Marketing B',
+    });
+    expect(splitCourse('Data StructuresT1 BTech CSE A+B')).toEqual({
+      courseName: 'Data Structures',
+      typeCode: 'T1',
+      lectureType: 'THEO',
+      division: 'BTech CSE A+B',
+    });
+  });
   it('returns null when no type suffix', () => {
     expect(splitCourse('Random Course')).toBeNull();
   });
-  it('returns empty division without BTI marker', () => {
+  it('returns empty division without a division suffix', () => {
     expect(splitCourse('RandomP1')).toEqual({
       courseName: 'Random',
       typeCode: 'P1',

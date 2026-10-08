@@ -31,16 +31,14 @@ export interface SplitCourse {
 }
 
 export function splitCourse(courseRaw: string): SplitCourse | null {
-  const idx = courseRaw.indexOf(' BTI ');
-  const coursePart = idx === -1 ? courseRaw : courseRaw.slice(0, idx);
-  const division = idx === -1 ? '' : courseRaw.slice(idx + 1);
-  const m = /^(.*?)(P1|T1)$/.exec(coursePart);
+  const raw = courseRaw.trim();
+  const m = /^(.*?)(P1|T1)(?:\s+(.*))?$/.exec(raw);
   if (!m) return null;
   return {
-    courseName: m[1],
+    courseName: m[1].trim(),
     typeCode: m[2] as 'P1' | 'T1',
     lectureType: m[2] === 'T1' ? 'THEO' : 'PRAC',
-    division,
+    division: (m[3] ?? '').trim(),
   };
 }
 
@@ -111,7 +109,7 @@ export function parseAttendance(lines: string[]): ParsedAttendance {
   }
   if (skipped > 0) {
     throw new ParseError(
-      `${skipped} rows had an unrecognised course format — expected "<course>P1|T1 BTI <division>".`,
+      `${skipped} rows had an unrecognised course format — expected "<course>P1|T1 <division>".`,
     );
   }
   if (slots.length === 0) {
