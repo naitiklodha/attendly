@@ -8,9 +8,10 @@ import { formatPercent } from '@/lib/format';
 import { suggestMergeGroups } from '@/lib/subjectMerge';
 import { useApp } from '@/lib/store';
 import MergeSubjectsDialog from './MergeSubjectsDialog';
+import MergeSuggestionsPopup from './MergeSuggestionsPopup';
 
 export default function SubjectSummary() {
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const [merging, setMerging] = useState(false);
   const [dismissed, setDismissed] = useState<string[]>([]);
   if (!state.parsed) return null;
@@ -19,13 +20,14 @@ export default function SubjectSummary() {
     creditedIds(state.drives, state.selection),
     state.courseMerges,
   );
-  const suggestions = suggestMergeGroups(rows.map((row) => row.courseName)).filter(
+  const suggestionGroups = suggestMergeGroups(rows.map((row) => row.courseName));
+  const suggestions = suggestionGroups.filter(
     (group) => !dismissed.includes(group.join('|')),
   );
 
-  const dismissSuggestion = (group: string[]) => {
-    const key = group.join('|');
-    setDismissed((current) => (current.includes(key) ? current : [...current, key]));
+  const suppressSuggestions = () => {
+    const keys = suggestionGroups.map((group) => group.join('|'));
+    setDismissed((current) => [...new Set([...current, ...keys])]);
   };
 
   return (
@@ -44,41 +46,6 @@ export default function SubjectSummary() {
           Merge subjects
         </button>
       </div>
-
-      {suggestions.length > 0 && (
-        <div className="border-b border-hairline bg-surface-2 px-5 py-3.5">
-          <p className="t-eyebrow text-primary">Looks like the same subject</p>
-          <ul className="mt-2.5 space-y-2.5">
-            {suggestions.map((group) => (
-              <li
-                key={group.join('|')}
-                className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2"
-              >
-                <span className="min-w-0 text-[13px] leading-relaxed text-ink-muted">
-                  {group.join('  ·  ')}
-                </span>
-                <span className="flex shrink-0 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => dispatch({ type: 'MERGE_COURSES', names: group })}
-                    className="inline-flex items-center gap-1.5 rounded-sm bg-primary px-3 py-1.5 text-[13px] font-medium text-canvas transition hover:bg-primary-hover"
-                  >
-                    <LayersIcon aria-hidden="true" className="size-3.5" />
-                    Merge
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => dismissSuggestion(group)}
-                    className="btn-ghost"
-                  >
-                    Not now
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
       <ul className="divide-y divide-hairline">
         {rows.map((row, i) => {
@@ -134,6 +101,12 @@ export default function SubjectSummary() {
           );
         })}
       </ul>
+
+      <MergeSuggestionsPopup
+        open={suggestions.length > 0 && !merging}
+        suggestions={suggestions}
+        onClose={suppressSuggestions}
+      />
 
       <MergeSubjectsDialog
         open={merging}
